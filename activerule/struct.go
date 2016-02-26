@@ -10,7 +10,7 @@ import (
 
 type WalkDayData struct {
 	Daydata       int
-	Hourdata      [24]int
+	Hourdata      []int
 	Chufangid     int
 	Chufangfinish int
 	Chufangtotal  int
