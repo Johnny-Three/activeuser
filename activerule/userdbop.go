@@ -30,7 +30,8 @@ type Userdaytotalstat_s struct {
 	Userdaystat_s
 }
 
-var Test uint32
+var tcount0 uint32
+var tcount1 uint32
 var snapend int64
 
 //从个人天表中拿到一些数据统计出结果，活动开始到这次统计之间
@@ -222,34 +223,48 @@ func HandleUserTotalDB(start int64, end int64, uid int, arg *Arg_s, ars *ActiveR
 
 	}
 
-	atomic.AddUint32(&Test, 1)
+	atomic.AddUint32(&tcount0, 1)
 
-	fmt.Printf("write [%d] record into wanbu_stat_activeuser_v1\n", Test)
+	fmt.Printf("write [%d] record into wanbu_stat_activeuser_v1\n", tcount0)
 
 	return nil
 }
 
-func HandleUserDayDB(uds *Userdaystat_s, db *sql.DB) error {
+func HandleUserDayDB(slice_uds []Userdaystat_s, db *sql.DB) error {
 
-	is := `INSERT INTO wanbu_stat_activeuser_day_v1_n0(activeid, userid, walkdate,groupid, updatetime, timestamp,
-		stepnumber, stepdistance, steptime, credit1, credit2, credit3,  credit4, credit5, credit6,
-		credit7,credit8, stepdaypass) values 
-		(?,?,?,?,UNIX_TIMESTAMP(),?,?,?,?,?,?,?,?,?,?,?,?,?)
-		ON DUPLICATE KEY UPDATE timestamp =  IF(stepdistance <> VALUES(stepdistance), VALUES(timestamp), timestamp),
-        updatetime=VALUES(updatetime),credit1=VALUES(credit1),credit2=VALUES(credit2),credit3=VALUES(credit3),
-         credit4=VALUES(credit4),credit5=VALUES(credit5),credit6=VALUES(credit6),credit7=VALUES(credit7),
-         credit8=VALUES(credit8),stepnumber=VALUES(stepnumber),stepdistance=VALUES(stepdistance),
-         steptime=VALUES(steptime),groupid=VALUES(groupid),stepdaypass=VALUES(stepdaypass),updatetime=Values(updatetime)`
+	sqlStr := `INSERT INTO wanbu_stat_activeuser_day_v1_n0(activeid, userid, walkdate,timestamp, updatetime, groupid,
+				stepnumber, stepdistance, steptime, credit1, credit2, credit3,  credit4, credit5, credit6,
+				credit7,credit8, stepdaypass) values `
 
-	_, err := db.Exec(is, uds.Aid, uds.Uid, uds.Walkdate, uds.Gid, uds.Timestamp, uds.Stepnumber, uds.Stepdistance,
-		uds.Steptime, uds.Credit1, uds.Credit2, uds.Credit3, uds.Credit4, uds.Credit5,
-		uds.Credit6, uds.Credit7, uds.Credit8, uds.Stepdaypass)
+	vals := []interface{}{}
+
+	for _, uds := range slice_uds {
+		sqlStr += "(?,?,?,?,UNIX_TIMESTAMP(),?,?,?,?,?,?,?,?,?,?,?,?,?),"
+		vals = append(vals, uds.Aid, uds.Uid, uds.Walkdate, uds.Timestamp, uds.Gid, uds.Stepnumber, uds.Stepdistance,
+			uds.Steptime, uds.Credit1, uds.Credit2, uds.Credit3, uds.Credit4, uds.Credit5,
+			uds.Credit6, uds.Credit7, uds.Credit8, uds.Stepdaypass)
+	}
+	//trim the last ,
+	sqlStr = sqlStr[0 : len(sqlStr)-1]
+
+	sqlStr += `ON DUPLICATE KEY UPDATE timestamp =  IF(stepdistance <> VALUES(stepdistance), VALUES(timestamp), timestamp),
+				        updatetime=VALUES(updatetime),credit1=VALUES(credit1),credit2=VALUES(credit2),credit3=VALUES(credit3),
+				         credit4=VALUES(credit4),credit5=VALUES(credit5),credit6=VALUES(credit6),credit7=VALUES(credit7),
+				         credit8=VALUES(credit8),stepnumber=VALUES(stepnumber),stepdistance=VALUES(stepdistance),
+				         steptime=VALUES(steptime),groupid=VALUES(groupid),stepdaypass=VALUES(stepdaypass),updatetime=Values(updatetime)`
+
+	//format all vals at once
+	_, err := db.Exec(sqlStr, vals...)
 
 	if err != nil {
 		return err
 	}
 
+	atomic.AddUint32(&tcount1, 1)
+	fmt.Printf("write [%d] record into wanbu_stat_activeuser_day_v1_n0\n", tcount1)
+
 	return nil
+
 }
 
 func Loaduserwalkdaydata(uid int, db *sql.DB, pool *redis.Pool) (wds []WalkDayData, err error) {
@@ -260,21 +275,67 @@ func Loaduserwalkdaydata(uid int, db *sql.DB, pool *redis.Pool) (wds []WalkDayDa
 
 		WalkDayData{
 			13000,
-			[]int{32, 0, 0, 0, 0, 0, 3000, 544, 0, 696, 492, 673, 1219, 15, 0, 0, 938, 4000, 359, 0, 1148, 6321, 3941, 67},
+			[24]int{32, 0, 0, 0, 0, 0, 3000, 544, 0, 696, 492, 673, 1219, 15, 0, 0, 938, 4000, 359, 0, 1148, 6321, 3941, 67},
 			3790,
 			3,
 			3,
-			1455724800,
+			1452873600,
 			1455724804,
 		},
 		WalkDayData{
+			13000,
+			[24]int{32, 0, 0, 0, 0, 0, 3000, 544, 0, 696, 492, 673, 1219, 15, 0, 0, 938, 4000, 359, 0, 1148, 6321, 3941, 67},
+			3790,
+			3,
+			3,
+			1452960000,
+			1455724804,
+		},
+
+		WalkDayData{
 			11616,
-			[]int{0, 0, 0, 0, 0, 0, 0, 0, 1669, 188, 1239, 929, 1577, 494, 1863, 2570, 0, 888, 199, 0, 0, 0, 0, 0},
+			[24]int{0, 0, 0, 0, 0, 0, 0, 0, 1669, 188, 1239, 929, 1577, 494, 1863, 2570, 0, 888, 199, 0, 0, 0, 0, 0},
 			25,
 			1,
 			3,
-			1455811200,
+			1453046400,
 			1455811204,
+		},
+		WalkDayData{
+			13000,
+			[24]int{32, 0, 0, 0, 0, 0, 3000, 544, 0, 696, 492, 673, 1219, 15, 0, 0, 938, 4000, 359, 0, 1148, 6321, 3941, 67},
+			3790,
+			3,
+			3,
+			1453132800,
+			1455724804,
+		},
+		WalkDayData{
+			13000,
+			[24]int{32, 0, 0, 0, 0, 0, 3000, 544, 0, 696, 492, 673, 1219, 15, 0, 0, 938, 4000, 359, 0, 1148, 6321, 3941, 67},
+			3790,
+			3,
+			3,
+			1455897600,
+			1455897600,
+		},
+		WalkDayData{
+			13000,
+			[24]int{32, 0, 0, 0, 0, 0, 3000, 544, 0, 696, 492, 673, 1219, 15, 0, 0, 938, 4000, 359, 0, 1148, 6321, 3941, 67},
+			3790,
+			3,
+			3,
+			1455984000,
+			1455984000,
+		},
+		WalkDayData{
+			13000,
+			[24]int{32, 0, 0, 0, 0, 0, 3000, 544, 0, 696, 492, 673, 1219, 15, 0, 0, 938, 4000, 359, 0, 1148, 6321, 3941, 67},
+			3790,
+			3,
+			3,
+			1456070400,
+			1456070400,
 		},
 	}
 	return wds1, nil
