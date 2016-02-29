@@ -15,7 +15,6 @@ import (
 var def = 100
 var pool *redis.Pool
 var db *sql.DB
-var Userday_chan chan *Userdaystat_s
 var walkuserdata_chan chan *walkuserdata
 var wg sync.WaitGroup
 
@@ -26,31 +25,11 @@ type walkuserdata struct {
 
 func init() {
 
-	Userday_chan = make(chan *Userdaystat_s, 16)
 	walkuserdata_chan = make(chan *walkuserdata, 16)
 }
 
 //将个人天对DB的操作与计算分开，这样最大化的利用CPU的计算能力
 func ReadUserDayChan(n int, start time.Time) {
-
-	for {
-
-		uds := <-Userday_chan
-		n += 1
-
-		go func(uds *Userdaystat_s) {
-
-			err := HandleUserDayDB(uds, db)
-			if err != nil {
-
-				Logger.Error("in HandleUserDayDB", err, "uid:", uds.Uid, "gid", uds.Gid)
-			}
-			//fmt.Printf("write [%d] recorde into wanbu_stat_activeuser_v1_n0\n", Test)
-
-		}(uds)
-
-		//fmt.Printf("receive num count is %d,uid is %d\n", n, uds.Uid)
-	}
 
 }
 
@@ -76,10 +55,14 @@ func BatchStat(uids []Uarg_s, dbin *sql.DB, poolin *redis.Pool) {
 		for {
 
 			wud := <-walkuserdata_chan
-			//fmt.Println(wud.ura.Actives)
-			for _, aid := range wud.ura.Actives {
 
-				go OneUserActiveStat(wud.ura.Uid, &aid, *wud.wds)
+			for _, arg := range wud.ura.Actives {
+
+				go func(arg Arg_s) {
+
+					OneUserActiveStat(wud.ura.Uid, &arg, *wud.wds)
+
+				}(arg)
 			}
 		}
 
@@ -173,7 +156,7 @@ func OneUserActiveStat(uid int, arg *Arg_s, wdsin []WalkDayData) {
 		return
 	}
 
-	var uds *Userdaystat_s
+	var slice_uds []Userdaystat_s
 	//做完一个用户一天的统计后，将结果无情的传出去,供团队天处理..
 	//所以结果中应该保留uid,aid及团队统计要用的一切数据..
 
@@ -215,7 +198,7 @@ func OneUserActiveStat(uid int, arg *Arg_s, wdsin []WalkDayData) {
 			st2 = append(st2, 0)
 		}
 		//fmt.Printf(" %v\n", st2)
-		uds = &Userdaystat_s{
+		uds := Userdaystat_s{
 
 			arg.Aid,
 			uid,
@@ -235,34 +218,22 @@ func OneUserActiveStat(uid int, arg *Arg_s, wdsin []WalkDayData) {
 			st2[2],
 			pass,
 		}
+		slice_uds = append(slice_uds, uds)
+	}
 
-		err := HandleUserDayDB(uds, db)
-		if err != nil {
+	err := HandleUserDayDB(slice_uds, db)
+	if err != nil {
 
-			Logger.Error("in HandleUserDayDB", err, "uid:", uds.Uid, "gid", uds.Gid)
-		}
-
-		//Userday_chan <- uds
+		Logger.Error("in HandleUserDayDB ", err, "uid: ", uid, "gid ", arg.Gid)
 	}
 
 	//个人总统计（入DB）
 	//比较用户加入活动的时间与活动开始的时间，取其中的大值，作为Start;
 	//上传的有效天数据slice的最后一个元素的walkdate作为end;
-	err := HandleUserTotalDB(join, wdsout[len(wdsout)-1].WalkDate, uds.Uid, arg, ars, db)
-	if err != nil {
+	err0 := HandleUserTotalDB(join, wdsout[len(wdsout)-1].WalkDate, uid, arg, ars, db)
+	if err0 != nil {
 
-		Logger.Error("in HandleUserTotalDB", err, "uid:", uid, "gid", arg.Gid)
+		Logger.Error("in HandleUserTotalDB", err0, "uid:", uid, "gid", arg.Gid)
 	}
-	/*
-		go func(uds *Userdaystat_s, join int64, wdsout []WalkDayData, arg *Arg_s, ars *ActiveRule) {
-
-			err := HandleUserTotalDB(join, wdsout[len(wdsout)-1].WalkDate, uds.Uid, arg, ars, db)
-			if err != nil {
-
-				Logger.Error("in HandleUserTotalDB", err, "uid:", uid, "gid", arg.Gid)
-			}
-
-		}(uds, join, wdsout, arg, ars)
-	*/
 
 }
