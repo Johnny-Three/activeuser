@@ -85,20 +85,13 @@ func dispatch() error {
 			switch val := val.(type) {
 			case string:
 
-				//fmt.Println(val)
+				fmt.Println(val)
 				//TODO::挂载在Master上必须有au模块，如果没有au模块则需要发出严厉的告警...
 				if len(Slice_netconn) > 0 {
 
-					//依照现有的连接平均依次发送用户的上传数据。。。
-					if curconn == len(Slice_netconn) {
-						curconn = 0
-					}
 					words := "fuckyou"
 					//发送消息时
-					Slice_netconn[curconn].Conn.Write([]byte(words))
-					fmt.Println("write msg to ", Slice_netconn[curconn].Seq, " conn")
-					//fmt.Println("conn length is ", len(Slice_netconn), "== ", msg)
-					curconn += 1
+					Slice_netconn[0].Conn.Write([]byte(words))
 
 				} else {
 

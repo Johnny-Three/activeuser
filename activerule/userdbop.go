@@ -30,6 +30,8 @@ type Userdaytotalstat_s struct {
 	Userdaystat_s
 }
 
+var Map_user_actives map[int][]Arg_s
+
 var tcount0 uint32
 var tcount1 uint32
 var snapend int64
@@ -275,7 +277,7 @@ func Loaduserwalkdaydata(uid int, db *sql.DB, pool *redis.Pool) (wds []WalkDayDa
 
 		WalkDayData{
 			13000,
-			[24]int{32, 0, 0, 0, 0, 0, 3000, 544, 0, 696, 492, 673, 1219, 15, 0, 0, 938, 4000, 359, 0, 1148, 6321, 3941, 67},
+			[]int{32, 0, 0, 0, 0, 0, 3000, 544, 0, 696, 492, 673, 1219, 15, 0, 0, 938, 4000, 359, 0, 1148, 6321, 3941, 67},
 			3790,
 			3,
 			3,
@@ -284,7 +286,7 @@ func Loaduserwalkdaydata(uid int, db *sql.DB, pool *redis.Pool) (wds []WalkDayDa
 		},
 		WalkDayData{
 			13000,
-			[24]int{32, 0, 0, 0, 0, 0, 3000, 544, 0, 696, 492, 673, 1219, 15, 0, 0, 938, 4000, 359, 0, 1148, 6321, 3941, 67},
+			[]int{32, 0, 0, 0, 0, 0, 3000, 544, 0, 696, 492, 673, 1219, 15, 0, 0, 938, 4000, 359, 0, 1148, 6321, 3941, 67},
 			3790,
 			3,
 			3,
@@ -294,7 +296,7 @@ func Loaduserwalkdaydata(uid int, db *sql.DB, pool *redis.Pool) (wds []WalkDayDa
 
 		WalkDayData{
 			11616,
-			[24]int{0, 0, 0, 0, 0, 0, 0, 0, 1669, 188, 1239, 929, 1577, 494, 1863, 2570, 0, 888, 199, 0, 0, 0, 0, 0},
+			[]int{0, 0, 0, 0, 0, 0, 0, 0, 1669, 188, 1239, 929, 1577, 494, 1863, 2570, 0, 888, 199, 0, 0, 0, 0, 0},
 			25,
 			1,
 			3,
@@ -303,7 +305,7 @@ func Loaduserwalkdaydata(uid int, db *sql.DB, pool *redis.Pool) (wds []WalkDayDa
 		},
 		WalkDayData{
 			13000,
-			[24]int{32, 0, 0, 0, 0, 0, 3000, 544, 0, 696, 492, 673, 1219, 15, 0, 0, 938, 4000, 359, 0, 1148, 6321, 3941, 67},
+			[]int{32, 0, 0, 0, 0, 0, 3000, 544, 0, 696, 492, 673, 1219, 15, 0, 0, 938, 4000, 359, 0, 1148, 6321, 3941, 67},
 			3790,
 			3,
 			3,
@@ -312,7 +314,7 @@ func Loaduserwalkdaydata(uid int, db *sql.DB, pool *redis.Pool) (wds []WalkDayDa
 		},
 		WalkDayData{
 			13000,
-			[24]int{32, 0, 0, 0, 0, 0, 3000, 544, 0, 696, 492, 673, 1219, 15, 0, 0, 938, 4000, 359, 0, 1148, 6321, 3941, 67},
+			[]int{32, 0, 0, 0, 0, 0, 3000, 544, 0, 696, 492, 673, 1219, 15, 0, 0, 938, 4000, 359, 0, 1148, 6321, 3941, 67},
 			3790,
 			3,
 			3,
@@ -321,7 +323,7 @@ func Loaduserwalkdaydata(uid int, db *sql.DB, pool *redis.Pool) (wds []WalkDayDa
 		},
 		WalkDayData{
 			13000,
-			[24]int{32, 0, 0, 0, 0, 0, 3000, 544, 0, 696, 492, 673, 1219, 15, 0, 0, 938, 4000, 359, 0, 1148, 6321, 3941, 67},
+			[]int{32, 0, 0, 0, 0, 0, 3000, 544, 0, 696, 492, 673, 1219, 15, 0, 0, 938, 4000, 359, 0, 1148, 6321, 3941, 67},
 			3790,
 			3,
 			3,
@@ -330,7 +332,7 @@ func Loaduserwalkdaydata(uid int, db *sql.DB, pool *redis.Pool) (wds []WalkDayDa
 		},
 		WalkDayData{
 			13000,
-			[24]int{32, 0, 0, 0, 0, 0, 3000, 544, 0, 696, 492, 673, 1219, 15, 0, 0, 938, 4000, 359, 0, 1148, 6321, 3941, 67},
+			[]int{32, 0, 0, 0, 0, 0, 3000, 544, 0, 696, 492, 673, 1219, 15, 0, 0, 938, 4000, 359, 0, 1148, 6321, 3941, 67},
 			3790,
 			3,
 			3,
@@ -414,6 +416,64 @@ func Loaduserwalkdaydata(uid int, db *sql.DB, pool *redis.Pool) (wds []WalkDayDa
 	}
 
 	return daysdata, nil
+
+}
+
+//加载未关闭的活动中所有的用户
+func Checkusers(db *sql.DB) (r_map_u_a *map[int][]Arg_s, err error) {
+
+	//a.activetime < b.closetime 确保活动统计结束前加入活动，否则有问题
+	qs := `select a.userid,a.activeid,a.groupid,a.activetime from wanbu_group_user a, wanbu_club_online b 
+		where a.activeid = b.activeid AND  b.endtime > UNIX_TIMESTAMP()  
+		and b.starttime < UNIX_TIMESTAMP() 
+		and a.activetime < b.closetime and b.storeflag <2 order by userid desc limit 10000`
+
+	rows, err := db.Query(qs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	map_u_a := make(map[int][]Arg_s)
+	var actives []Arg_s = []Arg_s{}
+	var active Arg_s = Arg_s{}
+	var former, next int
+	for rows.Next() {
+
+		err := rows.Scan(&next, &active.Aid, &active.Gid, &active.Jointime)
+		if err != nil {
+			return nil, err
+		}
+
+		if former == 0 {
+			former = next
+		}
+
+		if former == next {
+
+			actives = append(actives, active)
+			continue
+		}
+
+		user := Uarg_s{}
+		user.Uid = former
+		user.Actives = actives
+		map_u_a[user.Uid] = user.Actives
+
+		former = next
+		actives = nil
+		actives = append(actives, active)
+
+	}
+
+	if actives != nil {
+
+		user := Uarg_s{}
+		user.Uid = former
+		user.Actives = actives
+		map_u_a[user.Uid] = user.Actives
+	}
+	return &map_u_a, nil
 
 }
 

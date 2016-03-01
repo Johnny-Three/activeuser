@@ -31,9 +31,12 @@ func main() {
 
 	start := time.Now()
 	Logger.Info("software begins the time is ", start)
+
 	//load all users need to be calculate ..
-	allusers, err0 := Loadallusers(Db)
+	allusers, err0 := Checkusers(Db)
 	CheckError(err0)
+
+	fmt.Println((*allusers)[450975])
 
 	//load rules from live activities ..
 	err1 := LoadAcitveRule(Db)
@@ -42,7 +45,7 @@ func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
 	go ReadUserDayChan(0, time.Now())
-	go BatchStat(allusers, Db, Pool)
+	//go BatchStat(allusers, Db, Pool)
 
 	for {
 
