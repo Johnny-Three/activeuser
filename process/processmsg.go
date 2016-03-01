@@ -1,10 +1,10 @@
-package main
+package process
 
 import (
 	. "activeuser/activerule"
 	. "activeuser/logs"
 	. "activeuser/socket"
-	"fmt"
+	//"fmt"
 	"github.com/bitly/go-simplejson"
 	"strings"
 	"time"
@@ -16,6 +16,7 @@ type User_walkdays_struct struct {
 }
 
 var Userwalkdata User_walkdays_struct
+var Userwalkdata_chan chan User_walkdays_struct
 
 func decode(msg string) error {
 
@@ -69,10 +70,9 @@ func decode(msg string) error {
 	Userwalkdata.Uid = userid
 	Userwalkdata.Walkdays = walkdays
 
-	fmt.Println("in process msg receive msg is : ", Userwalkdata)
-	//向thread safe 的 queue写数据
-	//queue.Push(Userwalkdata)
+	Userwalkdata_chan <- Userwalkdata
 
+	//fmt.Println("in process msg receive msg is : ", Userwalkdata)
 	return nil
 }
 
@@ -98,13 +98,12 @@ func processmsg() error {
 	return nil
 }
 
-func main() {
+func init() {
+
+	Userwalkdata_chan = make(chan User_walkdays_struct, 16)
 
 	go func() {
 
 		processmsg()
 	}()
-
-	select {}
-
 }

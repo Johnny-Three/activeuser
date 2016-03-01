@@ -138,6 +138,19 @@ func BatchStat(uids []Uarg_s, dbin *sql.DB, poolin *redis.Pool) {
 
 }
 
+func Calcuserscore(uid int, args []Arg_s, wdsin []WalkDayData) {
+
+	for _, arg := range args {
+
+		go func(arg Arg_s) {
+
+			OneUserActiveStat(uid, &arg, wdsin)
+
+		}(arg)
+	}
+
+}
+
 func OneUserActiveStat(uid int, arg *Arg_s, wdsin []WalkDayData) {
 
 	ars, exists := ActiveRules[arg.Aid]
