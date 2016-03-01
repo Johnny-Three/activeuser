@@ -67,6 +67,12 @@ func Depack(buffer []byte, readerChannel chan Message) []byte {
 			break
 		}
 		if string(buffer[i:i+HeaderLen]) == MsgHeader {
+
+			//如果正好碰到message，但是解不出来后4位。。出去。。
+			if length < i+HeaderLen+SaveMsgLen {
+				break
+			}
+
 			messageLength := BytesToInt(buffer[i+HeaderLen : i+HeaderLen+SaveMsgLen])
 			if length < i+HeaderLen+SaveMsgLen+messageLength {
 				break
@@ -81,6 +87,10 @@ func Depack(buffer []byte, readerChannel chan Message) []byte {
 			storemsg = Message{MsgType: 1, MsgContent: HeartBeat}
 
 		} else if string(buffer[i:i+RgLen]) == Register {
+
+			if length < i+RgLen+SaveMsgLen {
+				break
+			}
 
 			messageLength := BytesToInt(buffer[i+RgLen : i+RgLen+SaveMsgLen])
 			if length < i+RgLen+SaveMsgLen+messageLength {

@@ -6,7 +6,6 @@ import (
 	. "activeuser/socket"
 	"fmt"
 	"github.com/bitly/go-simplejson"
-	"net"
 	"strings"
 	"time"
 )
@@ -53,7 +52,7 @@ func decode(msg string) error {
 		i_recipe, err1 := Slice_Atoi(strings.Split(s_recipe, ","))
 		if err1 == nil {
 
-			if len(i_recipe) != 4 {
+			if len(i_recipe) != 3 {
 				Logger.Criticalf("uid %d walkdate %d get wrong recipe %v format", userid, walkdate, i_recipe)
 			}
 		}
@@ -69,6 +68,8 @@ func decode(msg string) error {
 
 	Userwalkdata.Uid = userid
 	Userwalkdata.Walkdays = walkdays
+
+	fmt.Println("in process msg receive msg is : ", Userwalkdata)
 	//向thread safe 的 queue写数据
 	//queue.Push(Userwalkdata)
 
@@ -85,11 +86,9 @@ func processmsg() error {
 
 			switch val := val.(type) {
 			case string:
-
-				fmt.Println(val)
+				//fmt.Println("in activeuser msg is : ", val)
 				decode(val)
 			}
-
 		} else {
 
 			time.Sleep(10 * time.Millisecond)
@@ -97,7 +96,6 @@ func processmsg() error {
 	}
 
 	return nil
-
 }
 
 func main() {
@@ -107,9 +105,6 @@ func main() {
 		processmsg()
 	}()
 
-	for {
-
-		time.Sleep(2 * time.Second)
-	}
+	select {}
 
 }
