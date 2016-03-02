@@ -32,9 +32,14 @@ func main() {
 
 	start := time.Now()
 	Logger.Info("software begins the time is ", start)
+
 	//load all users need to be calculate ..
 	allusers, err0 := Checkusers(Db)
 	CheckError(err0)
+
+	//load rules from live activities ..
+	err1 := LoadAcitveRule(Db)
+	CheckError(err1)
 
 	fmt.Println((*allusers)[454081])
 	fmt.Println((*allusers)[454082])
@@ -46,10 +51,6 @@ func main() {
 	fmt.Println((*allusers)[454088])
 	fmt.Println((*allusers)[454089])
 	fmt.Println((*allusers)[454090])
-
-	//load rules from live activities ..
-	err1 := LoadAcitveRule(Db)
-	CheckError(err1)
 
 	runtime.GOMAXPROCS(runtime.NumCPU())
 

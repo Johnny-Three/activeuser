@@ -2,9 +2,9 @@ package austat
 
 import (
 	. "activeuser/activerule"
+	. "activeuser/logs"
 	"database/sql"
 	//"fmt"
-	. "activeuser/logs"
 )
 
 //总成绩计算，Credit2+...Credit8
@@ -48,6 +48,7 @@ func TaskCreditStat(wd *WalkDayData, ar *ActiveRule, uid int, db *sql.DB) (n []f
 
 	qs := "SELECT IFNULL(SUM(CASE WHEN taskid <> -1 THEN credit ELSE 0 END),0), IFNULL(SUM(CASE WHEN taskid = -1 " +
 		"THEN credit ELSE 0 END),0) from wanbu_member_credit where userid=? and activeid = ? and walkdate=?"
+
 	rows, err := db.Query(qs, uid, ar.Activeid, wd.WalkDate)
 
 	if err != nil {
@@ -55,7 +56,6 @@ func TaskCreditStat(wd *WalkDayData, ar *ActiveRule, uid int, db *sql.DB) (n []f
 		return nil
 	}
 
-	//fmt.Println(uid, ar.Activeid, wd.WalkDate)
 	defer rows.Close()
 	for rows.Next() {
 
