@@ -5,7 +5,7 @@ import (
 	. "activeuser/austat"
 	. "activeuser/envbuild"
 	. "activeuser/logs"
-	. "activeuser/process"
+	. "activeuser/socket"
 	"flag"
 	"fmt"
 	"os"
@@ -59,14 +59,12 @@ func main() {
 		for {
 
 			uwd := <-Userwalkdata_chan
-			fmt.Println("xxx", uwd)
-
+			//fmt.Println("xxx", uwd)
 			value, exist := (*allusers)[uwd.Uid]
 			if exist == true {
 
 				//fmt.Println("uid ", uwd.Uid, " 在类在类")
-				go Calcuserscore(uwd.Uid, value, uwd.Walkdays)
-
+				Calcuserscore(uwd.Uid, value, Db, uwd.Walkdays)
 			}
 		}
 	}()

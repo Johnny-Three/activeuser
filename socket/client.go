@@ -158,9 +158,8 @@ func reader(conn net.Conn, readerChannel chan protocol.Message) {
 				conn.SetReadDeadline(time.Now().Add(time.Duration(5) * time.Second))
 
 			case 2:
+				Decode(data.MsgContent)
 
-				//fmt.Println("client: ", data.MsgContent)
-				Msgqueue.Push(data.MsgContent)
 			default:
 				fmt.Println("weird happens")
 			}

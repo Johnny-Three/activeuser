@@ -138,7 +138,9 @@ func BatchStat(uids []Uarg_s, dbin *sql.DB, poolin *redis.Pool) {
 
 }
 
-func Calcuserscore(uid int, args []Arg_s, wdsin []WalkDayData) {
+func Calcuserscore(uid int, args []Arg_s, dbin *sql.DB, wdsin []WalkDayData) {
+
+	db = dbin
 
 	for _, arg := range args {
 

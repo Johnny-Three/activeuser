@@ -1,13 +1,11 @@
-package process
+package socket
 
 import (
 	. "activeuser/activerule"
 	. "activeuser/logs"
-	. "activeuser/socket"
 	//"fmt"
 	"github.com/bitly/go-simplejson"
 	"strings"
-	"time"
 )
 
 type User_walkdays_struct struct {
@@ -18,7 +16,7 @@ type User_walkdays_struct struct {
 var Userwalkdata User_walkdays_struct
 var Userwalkdata_chan chan User_walkdays_struct
 
-func decode(msg string) error {
+func Decode(msg string) error {
 
 	js, err := simplejson.NewJson([]byte(msg))
 	if err != nil {
@@ -70,30 +68,9 @@ func decode(msg string) error {
 	Userwalkdata.Uid = userid
 	Userwalkdata.Walkdays = walkdays
 
+	//fmt.Println("recieve msg uid is ", userid)
+
 	Userwalkdata_chan <- Userwalkdata
-
-	//fmt.Println("in process msg receive msg is : ", Userwalkdata)
-	return nil
-}
-
-func processmsg() error {
-
-	//依照现有的连接平均依次发送用户的上传数据。。。
-	for {
-
-		val := Msgqueue.Poll()
-		if val != nil {
-
-			switch val := val.(type) {
-			case string:
-				//fmt.Println("in activeuser msg is : ", val)
-				decode(val)
-			}
-		} else {
-
-			time.Sleep(10 * time.Millisecond)
-		}
-	}
 
 	return nil
 }
@@ -102,8 +79,4 @@ func init() {
 
 	Userwalkdata_chan = make(chan User_walkdays_struct, 16)
 
-	go func() {
-
-		processmsg()
-	}()
 }
