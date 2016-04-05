@@ -5,6 +5,7 @@ import (
 	. "activeuser/dbop"
 	. "activeuser/envbuild"
 	. "activeuser/logs"
+	//. "activeuser/redisop"
 	. "activeuser/socket"
 	"flag"
 	"fmt"
