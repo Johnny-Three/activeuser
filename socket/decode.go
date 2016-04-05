@@ -1,8 +1,9 @@
 package socket
 
 import (
-	. "activeuser/activerule"
 	. "activeuser/logs"
+	. "activeuser/structure"
+	. "activeuser/util"
 	//"fmt"
 	"github.com/bitly/go-simplejson"
 	"strings"

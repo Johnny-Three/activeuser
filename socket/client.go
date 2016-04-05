@@ -121,7 +121,9 @@ func connect() {
 			//尝试重连5次,超过次数退出连接。。
 			if tryconnecttimes == 5 {
 				Logger.Critical("连接activemaster失败，5次重连均失败，问题很严重，系统将退出，请注意！！！", err)
-				os.Exit(1)
+				tryconnecttimes = 1
+				//过10S再连
+				time.Sleep(10 * time.Second)
 			}
 			continue
 

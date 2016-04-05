@@ -1,12 +1,56 @@
-package activerule
+package structure
 
 import (
+	. "activeuser/util"
 	"errors"
-	//"fmt"
 	"sort"
 	"strconv"
 	"strings"
 )
+
+type Arg_s struct {
+	Aid      int
+	Gid      int
+	Jointime int64
+}
+
+type Uarg_s struct {
+	Uid     int
+	Actives []Arg_s
+}
+
+type Userdaytotalstat_s struct {
+	Arrivetime   int64
+	Stepdaywanbu int
+	Userdaystat_s
+}
+
+type Node struct {
+	Hour  []int
+	Steps int
+	Score int
+}
+
+type Userdaystat_s struct {
+	Aid       int
+	Uid       int
+	Walkdate  int64
+	Timestamp int64
+	Gid       int
+	//updatetime  int
+	Stepnumber   int
+	Stepdistance int64
+	Steptime     int //无修改，写0
+	Credit1      float64
+	Credit2      float64
+	Credit3      float64
+	Credit4      float64
+	Credit5      float64
+	Credit6      float64
+	Credit7      float64
+	Credit8      float64
+	Stepdaypass  int
+}
 
 type WalkDayData struct {
 	Daydata       int

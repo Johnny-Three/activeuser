@@ -1,8 +1,8 @@
 package main
 
 import (
-	. "activeuser/activerule"
 	. "activeuser/austat"
+	. "activeuser/dbop"
 	. "activeuser/envbuild"
 	. "activeuser/logs"
 	. "activeuser/socket"
@@ -59,8 +59,11 @@ func main() {
 		for {
 
 			uwd := <-Userwalkdata_chan
+
+			//todo .. 判断是否这个用户在活动里，如果用户没有参加活动，则过滤出去。。
 			//fmt.Println("xxx", uwd)
 			value, exist := (*allusers)[uwd.Uid]
+
 			if exist == true {
 
 				//fmt.Println("uid ", uwd.Uid, " 在类在类")

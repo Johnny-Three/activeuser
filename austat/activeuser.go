@@ -1,15 +1,12 @@
 package austat
 
 import (
-	. "activeuser/activerule"
+	. "activeuser/dbop"
 	. "activeuser/logs"
+	. "activeuser/structure"
 	"database/sql"
-	"fmt"
 	"github.com/garyburd/redigo/redis"
-	//"strconv"
-	//"os"
 	"sync"
-	"time"
 )
 
 var def = 100
@@ -28,116 +25,6 @@ func init() {
 	walkuserdata_chan = make(chan *walkuserdata, 16)
 }
 
-//将个人天对DB的操作与计算分开，这样最大化的利用CPU的计算能力
-func ReadUserDayChan(n int, start time.Time) {
-
-}
-
-/*
-批次读取函数，由于资源的压力，比如redis，goroutine；
-期望一次性不要搞太多的goroutine出来，会占用比较多的内存和CPU；
-以及对redis瞬间产生大的连接数；这些都会导致程序问题，因此，这里搞一个批次的概念出来；
-一次处理一批，其中批次的批次内数量可以定义。
-推荐值<1000,目前envbuild文件中Redispool中的最大连接数设置值为1000，
-超过此值有危险
-*/
-func BatchStat(uids []Uarg_s, dbin *sql.DB, poolin *redis.Pool) {
-
-	pool = poolin
-	db = dbin
-
-	fmt.Println("total user is: ", len(uids))
-	stepth := len(uids) / def
-	fmt.Println("stepth is: ", stepth)
-
-	go func() {
-
-		for {
-
-			wud := <-walkuserdata_chan
-
-			for _, arg := range wud.ura.Actives {
-
-				go func(arg Arg_s) {
-
-					OneUserActiveStat(wud.ura.Uid, &arg, *wud.wds)
-
-				}(arg)
-			}
-		}
-
-	}()
-
-	for i := 0; i < stepth; i++ {
-
-		//休息一毫秒，这很重要，这一批次内的goroutine将去消费Redis连接，如果批次内数量大于
-		//redis设定的最大连接数，将出现connection pool exhausted错误
-		time.Sleep(1 * time.Millisecond)
-
-		for j := i * def; j < (i+1)*def; j++ {
-
-			wg.Add(1)
-
-			go func(j int) {
-				defer wg.Done()
-				wds, err := Loaduserwalkdaydata(uids[j].Uid, db, pool)
-				if err != nil {
-
-					Logger.Critical(err)
-
-				} else {
-					wud := walkuserdata{}
-					wud.wds = &wds
-					wud.ura = &uids[j]
-					walkuserdata_chan <- &wud
-					//fmt.Println(wud)
-				}
-
-			}(j)
-
-		}
-		wg.Wait()
-
-		fmt.Printf("总[%d]个用户,总[%d]批,第[%d]批读取完毕,此批[%d]个用户\n", len(uids), stepth, i, def)
-
-	}
-
-	yu := len(uids) % def
-
-	//模除部分处理
-	if yu != 0 {
-
-		for j := stepth * def; j < len(uids); j++ {
-
-			time.Sleep(1 * time.Millisecond)
-
-			wg.Add(1)
-			go func(j int) {
-				defer wg.Done()
-				wds, err := Loaduserwalkdaydata(uids[j].Uid, db, pool)
-				if err != nil {
-
-					Logger.Critical(err)
-
-				} else {
-
-					wud := walkuserdata{}
-					wud.wds = &wds
-					wud.ura = &uids[j]
-					walkuserdata_chan <- &wud
-				}
-
-			}(j)
-		}
-
-		wg.Wait()
-		fmt.Printf("总[%d]个用户,总[%d]批,第[%d]批读取完毕,此批[%d]个用户\n", len(uids), stepth, stepth,
-			len(uids[stepth*def:]))
-
-	}
-
-}
-
 func Calcuserscore(uid int, args []Arg_s, dbin *sql.DB, wdsin []WalkDayData) {
 
 	db = dbin
@@ -150,7 +37,6 @@ func Calcuserscore(uid int, args []Arg_s, dbin *sql.DB, wdsin []WalkDayData) {
 
 		}(arg)
 	}
-
 }
 
 func OneUserActiveStat(uid int, arg *Arg_s, wdsin []WalkDayData) {
@@ -245,10 +131,10 @@ func OneUserActiveStat(uid int, arg *Arg_s, wdsin []WalkDayData) {
 	//个人总统计（入DB）
 	//比较用户加入活动的时间与活动开始的时间，取其中的大值，作为Start;
 	//上传的有效天数据slice的最后一个元素的walkdate作为end;
-	err0 := HandleUserTotalDB(join, wdsout[len(wdsout)-1].WalkDate, uid, arg, ars, db)
-	if err0 != nil {
+	err = HandleUserTotalDB(join, wdsout[len(wdsout)-1].WalkDate, uid, arg, ars, db)
+	if err != nil {
 
-		Logger.Error("in HandleUserTotalDB", err0, "uid:", uid, "gid", arg.Gid)
+		Logger.Error("in HandleUserTotalDB", err, "uid:", uid, "gid", arg.Gid)
 	}
 
 }

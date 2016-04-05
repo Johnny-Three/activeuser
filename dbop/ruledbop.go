@@ -1,7 +1,8 @@
-package activerule
+package dbop
 
 import (
 	. "activeuser/logs"
+	. "activeuser/structure"
 	"database/sql"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"

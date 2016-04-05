@@ -1,34 +1,18 @@
-package activerule
+package dbop
 
 import (
 	"database/sql"
-	"errors"
+	//"errors"
 	"fmt"
-	"github.com/garyburd/redigo/redis"
+	//"github.com/garyburd/redigo/redis"
 	//. "logs"
 	//"os"
-	"strconv"
-	"strings"
+	//"strconv"
+	//"strings"
+	. "activeuser/structure"
 	"sync/atomic"
 	"time"
 )
-
-type Arg_s struct {
-	Aid      int
-	Gid      int
-	Jointime int64
-}
-
-type Uarg_s struct {
-	Uid     int
-	Actives []Arg_s
-}
-
-type Userdaytotalstat_s struct {
-	Arrivetime   int64
-	Stepdaywanbu int
-	Userdaystat_s
-}
 
 var Map_user_actives map[int][]Arg_s
 
@@ -269,156 +253,6 @@ func HandleUserDayDB(slice_uds []Userdaystat_s, db *sql.DB) error {
 
 }
 
-func Loaduserwalkdaydata(uid int, db *sql.DB, pool *redis.Pool) (wds []WalkDayData, err error) {
-
-	//假数据，每人两天
-
-	wds1 := []WalkDayData{
-
-		WalkDayData{
-			13000,
-			[]int{32, 0, 0, 0, 0, 0, 3000, 544, 0, 696, 492, 673, 1219, 15, 0, 0, 938, 4000, 359, 0, 1148, 6321, 3941, 67},
-			3790,
-			3,
-			3,
-			1452873600,
-			1455724804,
-		},
-		WalkDayData{
-			13000,
-			[]int{32, 0, 0, 0, 0, 0, 3000, 544, 0, 696, 492, 673, 1219, 15, 0, 0, 938, 4000, 359, 0, 1148, 6321, 3941, 67},
-			3790,
-			3,
-			3,
-			1452960000,
-			1455724804,
-		},
-
-		WalkDayData{
-			11616,
-			[]int{0, 0, 0, 0, 0, 0, 0, 0, 1669, 188, 1239, 929, 1577, 494, 1863, 2570, 0, 888, 199, 0, 0, 0, 0, 0},
-			25,
-			1,
-			3,
-			1453046400,
-			1455811204,
-		},
-		WalkDayData{
-			13000,
-			[]int{32, 0, 0, 0, 0, 0, 3000, 544, 0, 696, 492, 673, 1219, 15, 0, 0, 938, 4000, 359, 0, 1148, 6321, 3941, 67},
-			3790,
-			3,
-			3,
-			1453132800,
-			1455724804,
-		},
-		WalkDayData{
-			13000,
-			[]int{32, 0, 0, 0, 0, 0, 3000, 544, 0, 696, 492, 673, 1219, 15, 0, 0, 938, 4000, 359, 0, 1148, 6321, 3941, 67},
-			3790,
-			3,
-			3,
-			1455897600,
-			1455897600,
-		},
-		WalkDayData{
-			13000,
-			[]int{32, 0, 0, 0, 0, 0, 3000, 544, 0, 696, 492, 673, 1219, 15, 0, 0, 938, 4000, 359, 0, 1148, 6321, 3941, 67},
-			3790,
-			3,
-			3,
-			1455984000,
-			1455984000,
-		},
-		WalkDayData{
-			13000,
-			[]int{32, 0, 0, 0, 0, 0, 3000, 544, 0, 696, 492, 673, 1219, 15, 0, 0, 938, 4000, 359, 0, 1148, 6321, 3941, 67},
-			3790,
-			3,
-			3,
-			1456070400,
-			1456070400,
-		},
-	}
-	return wds1, nil
-
-	//刷数据，所有用户刷同样的两天数据，今天和昨天的，如果没有数据则返回空值，相当于统计两天的数据
-	//不同的是，这里如果从Redis中拿不到这两天的数据，至少，返回最近一天的wds值，这个wds的walkdate为今天unixtimestamp,其余null
-	var start, end int64
-
-	today, _ := time.ParseInLocation("20060102", time.Now().AddDate(0, 0, -37).Format("20060102"), time.Local)
-	yesterday, _ := time.ParseInLocation("20060102", time.Now().AddDate(0, 0, -38).Format("20060102"), time.Local)
-
-	start = yesterday.Unix()
-	end = today.Unix()
-
-	sortedkey := "sortset:uid:" + strconv.Itoa(uid) + ":walkdata"
-
-	conn := pool.Get() // get a client from the pool
-	// use the client
-	reply, err := redis.Values(conn.Do("ZRANGEBYSCORE", sortedkey, start, end, "withscores"))
-
-	if err != nil {
-
-		err := sortedkey + ":" + err.Error()
-		return nil, errors.New(err)
-	}
-
-	conn.Close()
-
-	var strs []string
-	if err = redis.ScanSlice(reply, &strs); err != nil {
-		return nil, err
-	}
-	//fmt.Println(strs)
-	//加载不到元素，todo..需要补数据？
-
-	if strs == nil {
-
-		err := sortedkey + "start: " + strconv.FormatInt(start, 10) + " end: " + strconv.FormatInt(end, 10) + " 数据为空"
-		return nil, errors.New(err)
-	}
-
-	var daysdata []WalkDayData = []WalkDayData{}
-	var daydata WalkDayData = WalkDayData{}
-
-	for index, v := range strs {
-
-		if index%2 != 0 {
-
-			daydata.WalkDate, _ = strconv.ParseInt(v, 10, 64)
-			daysdata = append(daysdata, daydata)
-			continue
-		}
-
-		tmp := strings.Split(v, "#")
-		if len(tmp) != 4 {
-
-			return nil, errors.New(sortedkey + "解析格式错误")
-		}
-		daydata.Daydata, _ = strconv.Atoi(tmp[0])
-
-		hours := strings.Split(tmp[1], ":")
-		if len(hours) == 24 {
-
-			for index, value := range hours {
-				daydata.Hourdata[index], _ = strconv.Atoi(value)
-			}
-		}
-		chufang := strings.Split(tmp[2], ":")
-		if len(chufang) == 3 {
-			daydata.Chufangid, _ = strconv.Atoi(chufang[0])
-			daydata.Chufangfinish, _ = strconv.Atoi(chufang[1])
-			daydata.Chufangtotal, _ = strconv.Atoi(chufang[2])
-		}
-		daydata.Timestamp, _ = strconv.ParseInt(tmp[3], 10, 64)
-
-	}
-
-	return daysdata, nil
-
-}
-
 //加载未关闭的活动中所有的用户
 func Checkusers(db *sql.DB) (r_map_u_a *map[int][]Arg_s, err error) {
 
@@ -426,7 +260,7 @@ func Checkusers(db *sql.DB) (r_map_u_a *map[int][]Arg_s, err error) {
 	qs := `select a.userid,a.activeid,a.groupid,a.activetime from wanbu_group_user a, wanbu_club_online b 
 		where a.activeid = b.activeid AND  b.endtime > UNIX_TIMESTAMP()  
 		and b.starttime < UNIX_TIMESTAMP() 
-		and a.activetime < b.closetime and b.storeflag <2 order by userid desc limit 10000`
+		and a.activetime < b.closetime and b.storeflag <2 order by userid desc`
 
 	rows, err := db.Query(qs)
 	if err != nil {

@@ -1,7 +1,7 @@
 package austat
 
 import (
-	. "activeuser/activerule"
+	. "activeuser/structure"
 	"time"
 )
 

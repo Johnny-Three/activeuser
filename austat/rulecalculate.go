@@ -1,10 +1,10 @@
 package austat
 
 import (
-	. "activeuser/activerule"
 	. "activeuser/logs"
+	. "activeuser/structure"
 	"database/sql"
-	//"fmt"
+	//fmt
 )
 
 //总成绩计算，Credit2+...Credit8
