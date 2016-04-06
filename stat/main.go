@@ -5,7 +5,7 @@ import (
 	. "activeuser/dbop"
 	. "activeuser/envbuild"
 	. "activeuser/logs"
-	//. "activeuser/redisop"
+	. "activeuser/redisop"
 	. "activeuser/socket"
 	"flag"
 	"fmt"
@@ -61,13 +61,19 @@ func main() {
 
 			uwd := <-Userwalkdata_chan
 
-			//todo .. 判断是否这个用户在活动里，如果用户没有参加活动，则过滤出去。。
-			//fmt.Println("xxx", uwd)
-			value, exist := (*allusers)[uwd.Uid]
+			userinfo, err := GetUserJoinGroupInfo(uwd.Uid, Pool)
+
+			//如果查找用户缓存出现问题...记录问题，继续工作
+			if err != nil {
+				Logger.Critical(err)
+				continue
+			}
+
+			//一定存在，已经从缓存中构造出来数据结构..
+			value, exist := (*userinfo)[uwd.Uid]
 
 			if exist == true {
 
-				//fmt.Println("uid ", uwd.Uid, " 在类在类")
 				Calcuserscore(uwd.Uid, value, Db, uwd.Walkdays)
 			}
 		}
