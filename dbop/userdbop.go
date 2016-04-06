@@ -1,15 +1,9 @@
 package dbop
 
 import (
-	"database/sql"
-	//"errors"
-	"fmt"
-	//"github.com/garyburd/redigo/redis"
-	//. "logs"
-	//"os"
-	//"strconv"
-	//"strings"
 	. "activeuser/structure"
+	"database/sql"
+	"fmt"
 	"sync/atomic"
 	"time"
 )

@@ -32,7 +32,7 @@ func Calcuserscore(uid int, args []Arg_s, dbin *sql.DB, wdsin []WalkDayData) {
 	for _, arg := range args {
 
 		go func(arg Arg_s) {
-
+			//每个用户每个活动一个协程..
 			OneUserActiveStat(uid, &arg, wdsin)
 
 		}(arg)
@@ -41,10 +41,12 @@ func Calcuserscore(uid int, args []Arg_s, dbin *sql.DB, wdsin []WalkDayData) {
 
 func OneUserActiveStat(uid int, arg *Arg_s, wdsin []WalkDayData) {
 
-	ars, exists := ActiveRules[arg.Aid]
-	if exists == false {
+	//找到对应的activerule ..
+	ars, err := LoadAcitveRule(arg.Aid, db)
 
-		Logger.Critical("uid ", uid, " aid ", arg.Aid, " 没有找到对应的ActiveRule..,或许因为用户活动对应查找；与活动规则加载没有对应上")
+	if err != nil {
+
+		Logger.Critical("uid【", uid, "】，", err)
 		return
 	}
 
@@ -122,7 +124,7 @@ func OneUserActiveStat(uid int, arg *Arg_s, wdsin []WalkDayData) {
 		slice_uds = append(slice_uds, uds)
 	}
 
-	err := HandleUserDayDB(slice_uds, db)
+	err = HandleUserDayDB(slice_uds, db)
 	if err != nil {
 
 		Logger.Error("in HandleUserDayDB ", err, "uid: ", uid, "gid ", arg.Gid)

@@ -15,6 +15,7 @@ func Validstatdays(ars *ActiveRule, arg *Arg_s, wdsin []WalkDayData) (wdsout []W
 	var begin, end int
 	var join int64
 	var wadsout []WalkDayData = []WalkDayData{}
+
 	//当前日期在预赛统计时间范围内，计算预赛成绩
 	if ars.Prestarttime <= t.Unix() && t.Unix() <= ars.Preendtime {
 
@@ -60,11 +61,19 @@ func Validstatdays(ars *ActiveRule, arg *Arg_s, wdsin []WalkDayData) (wdsout []W
 		if lenth > 1 {
 			//注意：前提，传入的wdsin中的元素一定是日期增长的，（传入参数保证）
 			//最大的传入日期与统计截止日期做比较，
-			if wdsin[lenth-1].WalkDate > ars.Preendtime {
+			//quitdate与ars.Preendtime取其中的较小值..
+			var comparetime int64
+			if arg.Quittime < ars.Preendtime {
+				comparetime = arg.Quittime
+			} else {
+				comparetime = ars.Preendtime
+			}
+
+			if wdsin[lenth-1].WalkDate > comparetime {
 
 				//一定能找到
 				for p, v := range wdsin {
-					if v.WalkDate == ars.Preendtime {
+					if v.WalkDate == comparetime {
 						end = p
 					}
 				}
@@ -82,6 +91,7 @@ func Validstatdays(ars *ActiveRule, arg *Arg_s, wdsin []WalkDayData) (wdsout []W
 		return wadsout, join
 
 	}
+
 	//当前日期在正式统计时间范围内，计算正式统计成绩
 	if ars.Starttime <= t.Unix() && t.Unix() <= ars.Closetime {
 
@@ -127,11 +137,19 @@ func Validstatdays(ars *ActiveRule, arg *Arg_s, wdsin []WalkDayData) (wdsout []W
 		if lenth > 1 {
 			//注意：前提，传入的wdsin中的元素一定是日期增长的，（传入参数保证）
 			//最大的传入日期与统计截止日期做比较，
-			if wdsin[lenth-1].WalkDate > ars.Endtime {
+			//quitdate与ars.Preendtime取其中的较小值..
+			var comparetime int64
+			if arg.Quittime < ars.Endtime {
+				comparetime = arg.Quittime
+			} else {
+				comparetime = ars.Endtime
+			}
+
+			if wdsin[lenth-1].WalkDate > comparetime {
 
 				//一定能找到
 				for p, v := range wdsin {
-					if v.WalkDate == ars.Endtime {
+					if v.WalkDate == comparetime {
 						end = p
 					}
 				}

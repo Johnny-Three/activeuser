@@ -12,6 +12,7 @@ type Arg_s struct {
 	Aid      int
 	Gid      int
 	Jointime int64
+	Quittime int64
 }
 
 type Uarg_s struct {

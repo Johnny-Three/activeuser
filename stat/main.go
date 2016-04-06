@@ -2,7 +2,6 @@ package main
 
 import (
 	. "activeuser/austat"
-	. "activeuser/dbop"
 	. "activeuser/envbuild"
 	. "activeuser/logs"
 	. "activeuser/redisop"
@@ -10,7 +9,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"runtime"
 	"time"
 )
 
@@ -31,41 +29,26 @@ func main() {
 	err := EnvBuild()
 	CheckError(err)
 
-	start := time.Now()
-	Logger.Info("software begins the time is ", start)
-
-	//load all users need to be calculate ..
-	allusers, err0 := Checkusers(Db)
-	CheckError(err0)
-
-	//load rules from live activities ..
-	err1 := LoadAcitveRule(Db)
-	CheckError(err1)
-
-	fmt.Println((*allusers)[454081])
-	fmt.Println((*allusers)[454082])
-	fmt.Println((*allusers)[454083])
-	fmt.Println((*allusers)[454084])
-	fmt.Println((*allusers)[454085])
-	fmt.Println((*allusers)[454086])
-	fmt.Println((*allusers)[454087])
-	fmt.Println((*allusers)[454088])
-	fmt.Println((*allusers)[454089])
-	fmt.Println((*allusers)[454090])
-
-	runtime.GOMAXPROCS(runtime.NumCPU())
-
 	go func() {
 
 		for {
 
 			uwd := <-Userwalkdata_chan
 
+			start := time.Now() // get current time
 			userinfo, err := GetUserJoinGroupInfo(uwd.Uid, Pool)
+			elapsed := time.Since(start)
+			fmt.Println("1 user get cache,using the time is ", elapsed)
 
 			//如果查找用户缓存出现问题...记录问题，继续工作
 			if err != nil {
 				Logger.Critical(err)
+				continue
+			}
+
+			if userinfo == nil {
+
+				fmt.Println("uid ", uwd.Uid, " 缓存数据为空")
 				continue
 			}
 

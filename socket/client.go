@@ -1,7 +1,6 @@
 package socket
 
 import (
-	. "activeuser/activerule"
 	. "activeuser/logs"
 	"activeuser/protocol"
 	"fmt"
@@ -23,13 +22,11 @@ type Walkdata struct {
 	Walkdays  []Walkday `json:"walkdays"`
 }
 
-var Msgqueue *Queue
 var server = "localhost:6080"
 var error_conn_chan chan int
 
 func init() {
 
-	Msgqueue = NewQueue()
 	error_conn_chan = make(chan int, 1)
 	//连接activemaster ...
 	go connect()
