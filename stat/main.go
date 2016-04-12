@@ -9,7 +9,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"time"
 )
 
 func CheckError(err error) {
@@ -29,16 +28,17 @@ func main() {
 	err := EnvBuild()
 	CheckError(err)
 
+	SetEnv(Pool, Db)
+
+	SetRedis(7806, Pool)
+
 	go func() {
 
 		for {
 
 			uwd := <-Userwalkdata_chan
 
-			start := time.Now() // get current time
 			userinfo, err := GetUserJoinGroupInfo(uwd.Uid, Pool)
-			elapsed := time.Since(start)
-			fmt.Println("1 user get cache,using the time is ", elapsed)
 
 			//如果查找用户缓存出现问题...记录问题，继续工作
 			if err != nil {
@@ -57,7 +57,7 @@ func main() {
 
 			if exist == true {
 
-				Calcuserscore(uwd.Uid, value, Db, uwd.Walkdays)
+				Calcuserscore(uwd.Uid, value, uwd.Walkdays)
 			}
 		}
 	}()

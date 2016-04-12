@@ -2,9 +2,12 @@ package austat
 
 import (
 	. "activeuser/dbop"
+	. "activeuser/envbuild"
 	. "activeuser/logs"
+	. "activeuser/redisop"
 	. "activeuser/structure"
 	"database/sql"
+	"fmt"
 	"github.com/garyburd/redigo/redis"
 	"sync"
 )
@@ -23,11 +26,26 @@ type walkuserdata struct {
 func init() {
 
 	walkuserdata_chan = make(chan *walkuserdata, 16)
+
 }
 
-func Calcuserscore(uid int, args []Arg_s, dbin *sql.DB, wdsin []WalkDayData) {
+func SetEnv(poolin *redis.Pool, dbin *sql.DB) {
 
-	db = dbin
+	pool = Pool
+	db = Db
+}
+
+func Calcuserscore(uid int, args []Arg_s, wdsin []WalkDayData) {
+
+	if pool == nil {
+
+		fmt.Println("pool is nil ")
+	}
+
+	if db == nil {
+
+		fmt.Println("db is nil ")
+	}
 
 	for _, arg := range args {
 
@@ -42,7 +60,7 @@ func Calcuserscore(uid int, args []Arg_s, dbin *sql.DB, wdsin []WalkDayData) {
 func OneUserActiveStat(uid int, arg *Arg_s, wdsin []WalkDayData) {
 
 	//找到对应的activerule ..
-	ars, err := LoadAcitveRule(arg.Aid, db)
+	ars, err := LoadAcitveRule(arg.Aid, pool, db)
 
 	if err != nil {
 

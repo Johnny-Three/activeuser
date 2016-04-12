@@ -1,17 +1,215 @@
 package redisop
 
 import (
+	. "activeuser/dbop"
+	. "activeuser/logs"
 	. "activeuser/structure"
+	"database/sql"
+	"encoding/json"
 	"errors"
-	//"fmt"
+	"fmt"
 	"github.com/garyburd/redigo/redis"
 	"strconv"
 	"strings"
+	"time"
 )
+
+func checkError(err error, aid int) {
+	if err != nil {
+		Logger.Critical("Activeid: " + strconv.Itoa(aid) + " ," + err.Error())
+	}
+}
+
+func SetRedis(aid int, pool *redis.Pool) {
+
+	key := "active:" + strconv.Itoa(aid) + ":info"
+	ar := ActiveRuleJson{
+		Activeid:         7806,
+		RecipeRule:       "0*0;33.3*1;66.7*2;100*3",
+		Credit2distance:  2,
+		BaseRule:         "1*0;6000*4;7000*5;8000*6;9000*7;10000*8",
+		Prizeflag:        1,
+		PrizeRule:        "5,6,7,8#3000*2;17,18,19,20,21,22,23#4000*2;",
+		Prizecondition:   10000,
+		Stepwidth:        0,
+		AppendPersonRule: "",
+		Distanceflag:     2,
+		Systemflag:       0,
+		Endstattype:      0,
+		Stattimeflag:     1,
+		Upstepline:       0,
+		Downstepline:     0,
+		UpPrizeLine:      2,
+		PassRule:         "",
+		Storeflag:        2,
+		Prestarttime:     0,
+		Preendtime:       0,
+		Starttime:        1451577600,
+		Endtime:          1483200000,
+		Closetime:        1483200000,
+		Enddistance:      300000000,
+	}
+
+	//value := `{"activeid":7806,"reciperule":"0*0;33.3*1;66.7*2;100*3;","credit2distance":2,"baserule":"1*0;6000*4;7000*5;8000*6;9000*7;10000*8","prizeflag":1,"prizerule":"5,6,7,8#3000*2;17,18,19,20,21,22,23#4000*2;","prizecondition":10000,"stepwidth":0,"addpersonrule":"","distanceflag":2,"systemflag":0,"endstattype":0,"stattimeflag":1,"upstepline":0,"downstepline":0,"upprizeline":2,"passrule":"","storeflag":2,"prestarttime":0,"preendtime":0,"starttime":1451577600,"endtime":1483200000,"closetime":1483200000,"enddistance":300000000}`
+
+	value, _ := json.Marshal(ar)
+	conn := pool.Get()
+	defer conn.Close()
+
+	// 存入redis
+	reply, err := conn.Do("SET", key, value)
+	if err != nil {
+		fmt.Println("in SetRedis(aid int, pool *redis.Pool) ", err)
+	}
+	if reply == "OK" {
+		fmt.Println("success")
+	}
+}
+
+func LoadAcitveRule(aid int, pool *redis.Pool, db *sql.DB) (*ActiveRule, error) {
+	/*
+		//tmp begin
+		tar := &ActiveRule{
+			Activeid: 7806,
+			//RecipeRule:       nil,
+			Credit2distance: 2,
+			//BaseRule:         nil,
+			Prizeflag: 1,
+			//PrizeRule:        nil,
+			Prizecondition: 10000,
+			Stepwidth:      0,
+			//AppendPersonRule: nil,
+			Distanceflag: 2,
+			Systemflag:   0,
+			Endstattype:  0,
+			Stattimeflag: 1,
+			Upstepline:   0,
+			Downstepline: 0,
+			UpPrizeLine:  2,
+			//PassRule:         "",
+			Storeflag:    2,
+			Prestarttime: 0,
+			Preendtime:   0,
+			Starttime:    1451577600,
+			Endtime:      1483200000,
+			Closetime:    1483200000,
+			Enddistance:  300000000,
+		}
+
+		tar.PrizeRule.Dbstring = "5,6,7,8#3000*2;17,18,19,20,21,22,23#4000*2;"
+		checkError(tar.PrizeRule.Parse(), tar.Activeid)
+
+		//tar.PassRule.Dbstring = arj.PassRule
+		//checkError(ar.PassRule.Parse(), tar.Activeid)
+
+		tar.RecipeRule.Dbstring = "0*0;33.3*1;66.7*2;100*3"
+		checkError(tar.RecipeRule.Parse(), tar.Activeid)
+
+		tar.BaseRule.Dbstring = "1*0;6000*4;7000*5;8000*6;9000*7;10000*8"
+		checkError(tar.BaseRule.Parse(), tar.Activeid)
+
+		return tar, nil
+		//tmp end
+	*/
+
+	//start := time.Now()
+
+	key := "active:" + strconv.Itoa(aid) + ":info"
+	// get a client from the pool
+	conn := pool.Get()
+	defer conn.Close()
+	// use the client
+	reply, err := redis.Bytes(conn.Do("GET", key))
+	if err != nil {
+		//redis连接失效？需要验证是不是走这里。。
+		err := key + ":" + err.Error()
+		fmt.Println(err)
+		Logger.Critical(err)
+		return LoadAcitveRuleFromDB(aid, db)
+	}
+
+	var arj ActiveRuleJson
+	// 将json解析ActiveRuleJson类型
+	errShal := json.Unmarshal(reply, &arj)
+	if errShal != nil {
+		//不应该出错误，json格式解析错误
+		err := key + ":" + errShal.Error()
+		fmt.Println(err, " json格式解析错误")
+		Logger.Critical(err, " json格式解析错误")
+		return LoadAcitveRuleFromDB(aid, db)
+	}
+
+	//json数据导入activerule结构
+	ar := &ActiveRule{}
+
+	//导入几个关键数据，结构或者需要判断
+	if arj.PrizeRule != "" {
+
+		ar.PrizeRule.Dbstring = arj.PrizeRule
+		checkError(ar.PrizeRule.Parse(), arj.Activeid)
+	}
+	if arj.PassRule != "" {
+		ar.PassRule.Dbstring = arj.PassRule
+		checkError(ar.PassRule.Parse(), arj.Activeid)
+	}
+	if arj.AppendPersonRule != "" {
+		ar.AppendPersonRule.Dbstring = arj.AppendPersonRule
+	}
+	if arj.Prizecondition >= 0 {
+		ar.Prizecondition = int(arj.Prizecondition)
+	}
+	if arj.RecipeRule != "" {
+		ar.RecipeRule.Dbstring = arj.RecipeRule
+		checkError(ar.RecipeRule.Parse(), arj.Activeid)
+	}
+	if arj.BaseRule != "" {
+		ar.BaseRule.Dbstring = arj.BaseRule
+		checkError(ar.BaseRule.Parse(), arj.Activeid)
+	}
+
+	ar.Activeid = arj.Activeid
+	ar.Credit2distance = arj.Credit2distance
+	ar.Prizeflag = arj.Prizeflag
+	ar.Stepwidth = arj.Stepwidth
+	ar.Distanceflag = arj.Distanceflag
+	ar.Systemflag = arj.Systemflag
+	ar.Endstattype = arj.Endstattype
+	ar.Stattimeflag = arj.Stattimeflag
+	ar.Upstepline = arj.Upstepline
+	ar.Downstepline = arj.Downstepline
+	ar.UpPrizeLine = arj.UpPrizeLine
+	ar.Storeflag = arj.Storeflag
+	ar.Prestarttime = arj.Prestarttime
+	ar.Preendtime = arj.Preendtime
+	ar.Starttime = arj.Starttime
+	ar.Endtime = arj.Endtime
+	ar.Closetime = arj.Closetime
+	ar.Enddistance = arj.Enddistance
+
+	//elapsed := time.Since(start)
+	//fmt.Println("LoadAcitveRule query total time:", elapsed)
+	return ar, nil
+}
 
 //todo..redis获取失败，需要从db中拿到..
 func GetUserJoinGroupInfo(uid int, pool *redis.Pool) (r_map_u_a *map[int][]Arg_s, err error) {
 
+	//map[455226:[{7806 311392 1452528000 1453305600}]]
+
+	map_u_a := make(map[int][]Arg_s)
+	var actives []Arg_s = []Arg_s{}
+	var active Arg_s = Arg_s{}
+
+	/*
+		//tmp begin
+		active.Aid, active.Gid, active.Jointime, active.Quittime = 7806, 311392, 1452528000, 1453305600
+		actives = append(actives, active)
+		map_u_a[uid] = actives
+		return &map_u_a, nil
+		//tmp end
+	*/
+
+	//start := time.Now() // get current time
 	setkey := "user:" + strconv.Itoa(uid) + ":groupinfo"
 	// get a client from the pool
 	conn := pool.Get()
@@ -34,10 +232,6 @@ func GetUserJoinGroupInfo(uid int, pool *redis.Pool) (r_map_u_a *map[int][]Arg_s
 
 		return nil, nil
 	}
-
-	map_u_a := make(map[int][]Arg_s)
-	var actives []Arg_s = []Arg_s{}
-	var active Arg_s = Arg_s{}
 
 	for _, value := range strs {
 
@@ -67,5 +261,7 @@ func GetUserJoinGroupInfo(uid int, pool *redis.Pool) (r_map_u_a *map[int][]Arg_s
 	}
 
 	map_u_a[uid] = actives
+	//elapsed := time.Since(start)
+	//fmt.Printf("user [%d] get cache,using the time is %v\n", uid, elapsed)
 	return &map_u_a, nil
 }

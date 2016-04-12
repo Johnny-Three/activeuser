@@ -18,7 +18,7 @@ func checkError(err error, aid int) {
 	}
 }
 
-func LoadAcitveRule(aid int, db *sql.DB) (*ActiveRule, error) {
+func LoadAcitveRuleFromDB(aid int, db *sql.DB) (*ActiveRule, error) {
 
 	ar := &ActiveRule{}
 	qs := `select co.activeid,reciperule,credit2distance,baserule, prizeflag, prizerule, 
