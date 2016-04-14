@@ -4,8 +4,9 @@ import (
 	. "activeuser/austat"
 	. "activeuser/envbuild"
 	. "activeuser/logs"
+	. "activeuser/nsq"
 	. "activeuser/redisop"
-	. "activeuser/socket"
+	"activeuser/strategy"
 	"flag"
 	"fmt"
 	"os"
@@ -24,14 +25,33 @@ func main() {
 	flag.Parse()
 	defer Logger.Flush()
 
-	//environment build
+	//环境创建...
 	err := EnvBuild()
 	CheckError(err)
 
+	//au环境参数传入...
 	SetEnv(Pool, Db)
 
+	//测试活动ID
 	SetRedis(7806, Pool)
 
+	//策略加载
+	if false == strategy.Init(Db) {
+		panic("统计策略load错误")
+	}
+
+	//对接NSQ
+	err = NewConsummer("base_data_upload", "activestat")
+	if err != nil {
+		panic(err)
+	}
+
+	//Consumer开始运行，消费消息
+	go func() {
+		ConsumerRun("127.0.0.1:4161")
+	}()
+
+	//统计
 	go func() {
 
 		for {

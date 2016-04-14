@@ -5,6 +5,7 @@ import (
 	. "activeuser/envbuild"
 	. "activeuser/logs"
 	. "activeuser/redisop"
+	"activeuser/strategy"
 	. "activeuser/structure"
 	"database/sql"
 	"fmt"
@@ -58,6 +59,19 @@ func Calcuserscore(uid int, args []Arg_s, wdsin []WalkDayData) {
 }
 
 func OneUserActiveStat(uid int, arg *Arg_s, wdsin []WalkDayData) {
+
+	//先找策略表，如果加载策略有问题，直接退。。
+	tablev, errv := strategy.GetTableV(arg.Aid)
+	if errv != nil {
+		Logger.Critical("uid【", uid, "】,", errv)
+		return
+	}
+
+	tablen, errn := strategy.GetTableN(arg.Aid)
+	if errn != nil {
+		Logger.Critical("uid【", uid, "】,", errn)
+		return
+	}
 
 	//找到对应的activerule ..
 	ars, err := LoadAcitveRule(arg.Aid, pool, db)
@@ -142,7 +156,7 @@ func OneUserActiveStat(uid int, arg *Arg_s, wdsin []WalkDayData) {
 		slice_uds = append(slice_uds, uds)
 	}
 
-	err = HandleUserDayDB(slice_uds, db)
+	err = HandleUserDayDB(slice_uds, tablen, db)
 	if err != nil {
 
 		Logger.Error("in HandleUserDayDB ", err, "uid: ", uid, "gid ", arg.Gid)
@@ -151,7 +165,7 @@ func OneUserActiveStat(uid int, arg *Arg_s, wdsin []WalkDayData) {
 	//个人总统计（入DB）
 	//比较用户加入活动的时间与活动开始的时间，取其中的大值，作为Start;
 	//上传的有效天数据slice的最后一个元素的walkdate作为end;
-	err = HandleUserTotalDB(join, wdsout[len(wdsout)-1].WalkDate, uid, arg, ars, db)
+	err = HandleUserTotalDB(join, wdsout[len(wdsout)-1].WalkDate, uid, arg, ars, tablev, db)
 	if err != nil {
 
 		Logger.Error("in HandleUserTotalDB", err, "uid:", uid, "gid", arg.Gid)

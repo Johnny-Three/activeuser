@@ -11,7 +11,7 @@ import (
 	"github.com/garyburd/redigo/redis"
 	"strconv"
 	"strings"
-	"time"
+	//"time"
 )
 
 func checkError(err error, aid int) {
@@ -50,7 +50,11 @@ func SetRedis(aid int, pool *redis.Pool) {
 		Enddistance:      300000000,
 	}
 
-	//value := `{"activeid":7806,"reciperule":"0*0;33.3*1;66.7*2;100*3;","credit2distance":2,"baserule":"1*0;6000*4;7000*5;8000*6;9000*7;10000*8","prizeflag":1,"prizerule":"5,6,7,8#3000*2;17,18,19,20,21,22,23#4000*2;","prizecondition":10000,"stepwidth":0,"addpersonrule":"","distanceflag":2,"systemflag":0,"endstattype":0,"stattimeflag":1,"upstepline":0,"downstepline":0,"upprizeline":2,"passrule":"","storeflag":2,"prestarttime":0,"preendtime":0,"starttime":1451577600,"endtime":1483200000,"closetime":1483200000,"enddistance":300000000}`
+	//value := `{"activeid":7806,"reciperule":"0*0;33.3*1;66.7*2;100*3;","credit2distance":2,"baserule":"1*0;6000*4;
+	//7000*5;8000*6;9000*7;10000*8","prizeflag":1,"prizerule":"5,6,7,8#3000*2;17,18,19,20,21,22,23#4000*2;",
+	//"prizecondition":10000,"stepwidth":0,"addpersonrule":"","distanceflag":2,"systemflag":0,"endstattype":0,
+	//"stattimeflag":1,"upstepline":0,"downstepline":0,"upprizeline":2,"passrule":"","storeflag":2,"prestarttime":0,
+	//"preendtime":0,"starttime":1451577600,"endtime":1483200000,"closetime":1483200000,"enddistance":300000000}`
 
 	value, _ := json.Marshal(ar)
 	conn := pool.Get()
@@ -67,8 +71,9 @@ func SetRedis(aid int, pool *redis.Pool) {
 }
 
 func LoadAcitveRule(aid int, pool *redis.Pool, db *sql.DB) (*ActiveRule, error) {
+
 	/*
-		//tmp begin
+		//tmp begin  直接给一个假数据，模拟不通过缓存走，直接内存读取，观察在某容量下的性能提升。。
 		tar := &ActiveRule{
 			Activeid: 7806,
 			//RecipeRule:       nil,
@@ -193,8 +198,6 @@ func LoadAcitveRule(aid int, pool *redis.Pool, db *sql.DB) (*ActiveRule, error) 
 
 //todo..redis获取失败，需要从db中拿到..
 func GetUserJoinGroupInfo(uid int, pool *redis.Pool) (r_map_u_a *map[int][]Arg_s, err error) {
-
-	//map[455226:[{7806 311392 1452528000 1453305600}]]
 
 	map_u_a := make(map[int][]Arg_s)
 	var actives []Arg_s = []Arg_s{}

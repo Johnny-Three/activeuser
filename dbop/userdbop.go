@@ -3,6 +3,7 @@ package dbop
 import (
 	. "activeuser/structure"
 	"database/sql"
+	"errors"
 	"fmt"
 	"sync/atomic"
 	"time"
@@ -17,7 +18,7 @@ var snapend int64
 //从个人天表中拿到一些数据统计出结果，活动开始到这次统计之间
 //算出这次统计的总成绩，相加
 //到达终点写wanbu_snapshot_activeuser_v1表
-func HandleUserTotalDB(start int64, end int64, uid int, arg *Arg_s, ars *ActiveRule, db *sql.DB) error {
+func HandleUserTotalDB(start int64, end int64, uid int, arg *Arg_s, ars *ActiveRule, tablev string, db *sql.DB) error {
 
 	qs := `SELECT stepdistance,(CASE WHEN stepnumber>=10000 THEN 1 ELSE 0 END),stepnumber,
 	credit1,credit2,credit3,credit4,credit5,credit6,credit7,credit8,stepdaypass,timestamp,walkdate
@@ -102,7 +103,7 @@ func HandleUserTotalDB(start int64, end int64, uid int, arg *Arg_s, ars *ActiveR
 	}
 
 	//未到达终点，将tmp中的数据更新至用户总统计表中。。(到不到终点都要更新)
-	is := `insert into wanbu_stat_activeuser_v1 (activeid,userid,timestamp,stepdaysp,stepdaywanbup,stepnumberp,
+	is := `insert into ? (activeid,userid,timestamp,stepdaysp,stepdaywanbup,stepnumberp,
 		stepdistancep,credit1p,credit2p,credit3p,credit4p,updatetime,arrivetime,stepdaypassp,credit5p,credit6p,
 		walkdate,credit7p,credit8p) values 
         (?,?,?,DATEDIFF(FROM_UNIXTIME(?),FROM_UNIXTIME(?))+1,
@@ -114,12 +115,14 @@ func HandleUserTotalDB(start int64, end int64, uid int, arg *Arg_s, ars *ActiveR
         credit6p=VALUES(credit6p),credit7p=VALUES(credit7p),credit8p=VALUES(credit8p),updatetime=UNIX_TIMESTAMP(),
         stepdaypassp=VALUES(stepdaypassp)`
 
-	_, err1 := db.Exec(is, arg.Aid, uid, tmp.Timestamp, end, start, tmp.Stepdaywanbu, tmp.Stepnumber,
+	_, err1 := db.Exec(is, "wanbu_stat_activeuser"+tablev, arg.Aid, uid, tmp.Timestamp, end, start, tmp.Stepdaywanbu, tmp.Stepnumber,
 		tmp.Stepdistance, tmp.Credit1, tmp.Credit2, tmp.Credit3, tmp.Credit4, tmp.Stepdaypass, tmp.Credit5,
 		tmp.Credit6, tmp.Walkdate, tmp.Credit7, tmp.Credit8)
 
 	if err1 != nil {
-		return err1
+
+		fmt.Println("执行SQL问题：" + err1.Error())
+		return errors.New("执行SQL问题：" + err1.Error())
 	}
 
 	//到达终点，需要查看到达日期是否提前，如果提前不操作snapshot表，保持arrivetime不变
@@ -127,10 +130,10 @@ func HandleUserTotalDB(start int64, end int64, uid int, arg *Arg_s, ars *ActiveR
 	if ifarrive == true {
 
 		//查看wanbu_snapshot_activeuser_v1表中的arrivetime，如果不存在查出来为0（有用）
-		qs := `select IFNULL(sum(arrivetime),0) from wanbu_snapshot_activeuser_v1   
+		qs := `select IFNULL(sum(arrivetime),0) from ?   
 		where activeid=?  AND userid=?`
 
-		rows, err := db.Query(qs, arg.Aid, uid)
+		rows, err := db.Query(qs, "wanbu_snapshot_activeuser"+tablev, arg.Aid, uid)
 		if err != nil {
 			return err
 		}
@@ -171,7 +174,7 @@ func HandleUserTotalDB(start int64, end int64, uid int, arg *Arg_s, ars *ActiveR
 				  `credit8p` double(10,2) NOT NULL DEFAULT '0.00',
 			*/
 
-			is := `insert into wanbu_snapshot_activeuser_v1 (activeid,userid,timestamp,stepdaysp,stepdaywanbup,
+			is := `insert into ? (activeid,userid,timestamp,stepdaysp,stepdaywanbup,
 				stepnumberp,stepdistancep,credit1p,credit2p,credit3p,credit4p,updatetime,arrivetime,stepdaypassp,
 				credit5p,credit6p,credit7p,credit8p) values 
         (?,?,?,DATEDIFF(FROM_UNIXTIME(?),FROM_UNIXTIME(?))+1,
@@ -183,7 +186,7 @@ func HandleUserTotalDB(start int64, end int64, uid int, arg *Arg_s, ars *ActiveR
         credit6p=VALUES(credit6p),credit7p=VALUES(credit7p),credit8p=VALUES(credit8p),updatetime=UNIX_TIMESTAMP(),
         stepdaypassp=VALUES(stepdaypassp),arrivetime=?`
 
-			_, err0 := db.Exec(is, arg.Aid, uid, snap.Timestamp, snapend, start, snap.Stepdaywanbu, snap.Stepnumber,
+			_, err0 := db.Exec(is, "wanbu_snapshot_activeuser"+tablev, arg.Aid, uid, snap.Timestamp, snapend, start, snap.Stepdaywanbu, snap.Stepnumber,
 				snap.Stepdistance, snap.Credit1, snap.Credit2, snap.Credit3, snap.Credit4, snap.Walkdate,
 				snap.Stepdaypass,
 				snap.Credit5, snap.Credit6, snap.Credit7, snap.Credit8, snap.Walkdate)
@@ -192,8 +195,8 @@ func HandleUserTotalDB(start int64, end int64, uid int, arg *Arg_s, ars *ActiveR
 				return err0
 			}
 
-			us := `update wanbu_stat_activeuser_v1 set arrivetime=? where activeid=? and userid=?`
-			_, err1 := db.Exec(us, snap.Walkdate, arg.Aid, uid)
+			us := `update ? set arrivetime=? where activeid=? and userid=?`
+			_, err1 := db.Exec(us, "wanbu_stat_activeuser"+tablev, snap.Walkdate, arg.Aid, uid)
 
 			if err1 != nil {
 				return err1
@@ -205,16 +208,16 @@ func HandleUserTotalDB(start int64, end int64, uid int, arg *Arg_s, ars *ActiveR
 
 	atomic.AddUint32(&tcount0, 1)
 
-	fmt.Printf("write [%d] record into wanbu_stat_activeuser_v1\n", tcount0)
+	fmt.Printf("write [%d] record into %s\n", tcount0, "wanbu_stat_activeuser"+tablev)
 
 	return nil
 }
 
-func HandleUserDayDB(slice_uds []Userdaystat_s, db *sql.DB) error {
+func HandleUserDayDB(slice_uds []Userdaystat_s, tablen string, db *sql.DB) error {
 
-	sqlStr := `INSERT INTO wanbu_stat_activeuser_day_v1_n0(activeid, userid, walkdate,timestamp, updatetime, groupid,
-				stepnumber, stepdistance, steptime, credit1, credit2, credit3,  credit4, credit5, credit6,
-				credit7,credit8, stepdaypass) values `
+	sqlStr := "INSERT INTO wanbu_stat_activeuser_day" + tablen +
+		"(activeid, userid, walkdate,timestamp, updatetime, groupid,stepnumber, stepdistance, steptime, credit1," +
+		"credit2, credit3,  credit4, credit5, credit6,credit7,credit8, stepdaypass) values"
 
 	vals := []interface{}{}
 
@@ -241,7 +244,7 @@ func HandleUserDayDB(slice_uds []Userdaystat_s, db *sql.DB) error {
 	}
 
 	atomic.AddUint32(&tcount1, 1)
-	fmt.Printf("write [%d] record into wanbu_stat_activeuser_day_v1_n0\n", tcount1)
+	fmt.Printf("write [%d] record into %s\n", tcount1, "wanbu_stat_activeuser_day"+tablen)
 
 	return nil
 

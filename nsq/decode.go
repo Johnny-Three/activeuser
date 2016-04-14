@@ -1,4 +1,4 @@
-package socket
+package nsq
 
 import (
 	. "activeuser/logs"
