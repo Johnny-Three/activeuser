@@ -10,6 +10,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 )
 
 func CheckError(err error) {
@@ -25,15 +26,16 @@ func main() {
 	flag.Parse()
 	defer Logger.Flush()
 
-	//环境创建...
+	//配置文件中的资源初始化（DB,REDIS），环境创建...
 	err := EnvBuild()
 	CheckError(err)
 
-	//au环境参数传入...
-	SetEnv(Pool, Db)
+	//配置文件中其它参数的读写,NSQ consumer IP 及 PORT,NSQ producer IP 及 PROT,活动过滤开关及过滤的活动ID
+	err = ConfigParse()
+	CheckError(err)
 
 	//测试活动ID
-	SetRedis(7806, Pool)
+	//SetRedis(7806, Pool)
 
 	//策略加载
 	if false == strategy.Init(Db) {
@@ -46,9 +48,12 @@ func main() {
 		panic(err)
 	}
 
+	//au环境参数传入...
+	SetEnv(Pool, Db)
+
 	//Consumer开始运行，消费消息
 	go func() {
-		ConsumerRun("127.0.0.1:4161")
+		ConsumerRun(EnvConf.Consumerip + ":" + EnvConf.Consumerport)
 	}()
 
 	//统计
@@ -77,7 +82,12 @@ func main() {
 
 			if exist == true {
 
-				Calcuserscore(uwd.Uid, value, uwd.Walkdays)
+				//如果此配置项打开，需要过滤活动
+				if true == strings.EqualFold(EnvConf.Filterstatus, "on") {
+					CalcuserscoreF(uwd.Uid, value, uwd.Walkdays)
+				} else {
+					Calcuserscore(uwd.Uid, value, uwd.Walkdays)
+				}
 			}
 		}
 	}()

@@ -51,10 +51,41 @@ func Calcuserscore(uid int, args []Arg_s, wdsin []WalkDayData) {
 	for _, arg := range args {
 
 		go func(arg Arg_s) {
+
 			//每个用户每个活动一个协程..
 			OneUserActiveStat(uid, &arg, wdsin)
 
 		}(arg)
+	}
+}
+
+func CalcuserscoreF(uid int, args []Arg_s, wdsin []WalkDayData) {
+
+	if pool == nil {
+
+		fmt.Println("pool is nil ")
+	}
+
+	if db == nil {
+
+		fmt.Println("db is nil ")
+	}
+
+	for _, arg := range args {
+
+		//过滤活动，存在配置内的活动予以统计
+		for _, filteraid := range EnvConf.FilterAids {
+
+			if arg.Aid == filteraid {
+
+				go func(arg Arg_s) {
+
+					//每个用户每个活动一个协程..
+					OneUserActiveStat(uid, &arg, wdsin)
+
+				}(arg)
+			}
+		}
 	}
 }
 

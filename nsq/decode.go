@@ -1,10 +1,10 @@
 package nsq
 
 import (
-	. "activeuser/logs"
 	. "activeuser/structure"
 	. "activeuser/util"
-	//"fmt"
+	"errors"
+	"fmt"
 	"github.com/bitly/go-simplejson"
 	"strings"
 )
@@ -21,7 +21,8 @@ func Decode(msg string) error {
 
 	js, err := simplejson.NewJson([]byte(msg))
 	if err != nil {
-		panic(err.Error())
+		errback := fmt.Sprintf("decode json error the error msg is %s", err.Error())
+		return errors.New(errback)
 	}
 
 	var wd WalkDayData
@@ -43,7 +44,8 @@ func Decode(msg string) error {
 		if err0 == nil {
 
 			if len(wd.Hourdata) != 24 {
-				Logger.Criticalf("uid %d walkdate %d get wrong hourdata %v format", userid, walkdate, wd.Hourdata)
+				errback := fmt.Sprintf("uid %d walkdate %d get wrong hourdata %v format", userid, walkdate, wd.Hourdata)
+				return errors.New(errback)
 			}
 		}
 
@@ -53,7 +55,8 @@ func Decode(msg string) error {
 		if err1 == nil {
 
 			if len(i_recipe) != 3 {
-				Logger.Criticalf("uid %d walkdate %d get wrong recipe %v format", userid, walkdate, i_recipe)
+				errback := fmt.Sprintf("uid %d walkdate %d get wrong recipe %v format", userid, walkdate, i_recipe)
+				return errors.New(errback)
 			}
 		}
 		//no problem .. then assign the chufang related value..
@@ -70,7 +73,6 @@ func Decode(msg string) error {
 	Userwalkdata.Walkdays = walkdays
 
 	//fmt.Println("recieve msg uid is ", userid)
-
 	Userwalkdata_chan <- Userwalkdata
 
 	return nil

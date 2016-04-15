@@ -11,7 +11,7 @@ import (
 	"github.com/garyburd/redigo/redis"
 	"strconv"
 	"strings"
-	//"time"
+	"time"
 )
 
 func checkError(err error, aid int) {
@@ -251,10 +251,15 @@ func GetUserJoinGroupInfo(uid int, pool *redis.Pool) (r_map_u_a *map[int][]Arg_s
 		if err != nil {
 			return nil, errors.New(setkey + ":gid 解析数据错误，string to int ")
 		}
-		active.Jointime, err = strconv.ParseInt(tmp[2], 10, 64)
-		if err != nil {
+		activetime, err0 := strconv.ParseInt(tmp[2], 10, 64)
+		if err0 != nil {
 			return nil, errors.New(setkey + ":activetime 解析数据错误，string to int ")
 		}
+		//根据艳超的建议，对activetime进行特殊的处理，特化为当前日期的0点0分0秒。
+		t, _ := time.ParseInLocation("20060102", time.Unix(activetime, 0).Format("20060102"), time.Local)
+		active.Jointime = t.Unix()
+
+		//fmt.Printf("转换前[%d]，转换后[%d]\n", activetime, active.Jointime)
 		active.Quittime, err = strconv.ParseInt(tmp[4], 10, 64)
 		if err != nil {
 			return nil, errors.New(setkey + ":quitdate 解析数据错误，string to int ")

@@ -103,19 +103,21 @@ func HandleUserTotalDB(start int64, end int64, uid int, arg *Arg_s, ars *ActiveR
 	}
 
 	//未到达终点，将tmp中的数据更新至用户总统计表中。。(到不到终点都要更新)
-	is := `insert into ? (activeid,userid,timestamp,stepdaysp,stepdaywanbup,stepnumberp,
-		stepdistancep,credit1p,credit2p,credit3p,credit4p,updatetime,arrivetime,stepdaypassp,credit5p,credit6p,
-		walkdate,credit7p,credit8p) values 
-        (?,?,?,DATEDIFF(FROM_UNIXTIME(?),FROM_UNIXTIME(?))+1,
-        ?,?,?,?,?,?,?,UNIX_TIMESTAMP(),0,?,?,?,?,?,?)
-        ON DUPLICATE KEY UPDATE 
-        timestamp = values(timestamp),stepdaysp = values(stepdaysp),stepdaywanbup = values(stepdaywanbup),
-        stepnumberp = values(stepnumberp),stepdistancep=values(stepdistancep),credit1p=VALUES(credit1p),
-        credit2p=VALUES(credit2p),credit3p=VALUES(credit3p),credit4p=VALUES(credit4p),credit5p=VALUES(credit5p),
-        credit6p=VALUES(credit6p),credit7p=VALUES(credit7p),credit8p=VALUES(credit8p),updatetime=UNIX_TIMESTAMP(),
-        stepdaypassp=VALUES(stepdaypassp)`
+	tablename := "wanbu_stat_activeuser" + tablev
 
-	_, err1 := db.Exec(is, "wanbu_stat_activeuser"+tablev, arg.Aid, uid, tmp.Timestamp, end, start, tmp.Stepdaywanbu, tmp.Stepnumber,
+	is := "insert into " + tablename + ` (activeid,userid,timestamp,stepdaysp,stepdaywanbup,stepnumberp,
+				stepdistancep,credit1p,credit2p,credit3p,credit4p,updatetime,arrivetime,stepdaypassp,credit5p,credit6p,
+				walkdate,credit7p,credit8p) values
+		        (?,?,?,DATEDIFF(FROM_UNIXTIME(?),FROM_UNIXTIME(?))+1,
+		        ?,?,?,?,?,?,?,UNIX_TIMESTAMP(),0,?,?,?,?,?,?)
+		        ON DUPLICATE KEY UPDATE
+		        timestamp = values(timestamp),stepdaysp = values(stepdaysp),stepdaywanbup = values(stepdaywanbup),
+		        stepnumberp = values(stepnumberp),stepdistancep=values(stepdistancep),credit1p=VALUES(credit1p),
+		        credit2p=VALUES(credit2p),credit3p=VALUES(credit3p),credit4p=VALUES(credit4p),credit5p=VALUES(credit5p),
+		        credit6p=VALUES(credit6p),credit7p=VALUES(credit7p),credit8p=VALUES(credit8p),updatetime=UNIX_TIMESTAMP(),
+		        stepdaypassp=VALUES(stepdaypassp)`
+
+	_, err1 := db.Exec(is, arg.Aid, uid, tmp.Timestamp, end, start, tmp.Stepdaywanbu, tmp.Stepnumber,
 		tmp.Stepdistance, tmp.Credit1, tmp.Credit2, tmp.Credit3, tmp.Credit4, tmp.Stepdaypass, tmp.Credit5,
 		tmp.Credit6, tmp.Walkdate, tmp.Credit7, tmp.Credit8)
 
@@ -174,7 +176,8 @@ func HandleUserTotalDB(start int64, end int64, uid int, arg *Arg_s, ars *ActiveR
 				  `credit8p` double(10,2) NOT NULL DEFAULT '0.00',
 			*/
 
-			is := `insert into ? (activeid,userid,timestamp,stepdaysp,stepdaywanbup,
+			tablename = "wanbu_snapshot_activeuser" + tablev
+			is := "insert into" + tablename + `(activeid,userid,timestamp,stepdaysp,stepdaywanbup,
 				stepnumberp,stepdistancep,credit1p,credit2p,credit3p,credit4p,updatetime,arrivetime,stepdaypassp,
 				credit5p,credit6p,credit7p,credit8p) values 
         (?,?,?,DATEDIFF(FROM_UNIXTIME(?),FROM_UNIXTIME(?))+1,
@@ -186,13 +189,14 @@ func HandleUserTotalDB(start int64, end int64, uid int, arg *Arg_s, ars *ActiveR
         credit6p=VALUES(credit6p),credit7p=VALUES(credit7p),credit8p=VALUES(credit8p),updatetime=UNIX_TIMESTAMP(),
         stepdaypassp=VALUES(stepdaypassp),arrivetime=?`
 
-			_, err0 := db.Exec(is, "wanbu_snapshot_activeuser"+tablev, arg.Aid, uid, snap.Timestamp, snapend, start, snap.Stepdaywanbu, snap.Stepnumber,
+			_, err0 := db.Exec(is, arg.Aid, uid, snap.Timestamp, snapend, start, snap.Stepdaywanbu, snap.Stepnumber,
 				snap.Stepdistance, snap.Credit1, snap.Credit2, snap.Credit3, snap.Credit4, snap.Walkdate,
 				snap.Stepdaypass,
 				snap.Credit5, snap.Credit6, snap.Credit7, snap.Credit8, snap.Walkdate)
 
 			if err0 != nil {
-				return err0
+				//fmt.Println("insert into wanbu_snapshot_activeuser " + err0.Error())
+				return errors.New("insert into wanbu_snapshot_activeuser " + err0.Error())
 			}
 
 			us := `update ? set arrivetime=? where activeid=? and userid=?`
