@@ -4,6 +4,7 @@ import (
 	. "activeuser/dbop"
 	. "activeuser/envbuild"
 	. "activeuser/logs"
+	"activeuser/nsq"
 	. "activeuser/redisop"
 	"activeuser/strategy"
 	. "activeuser/structure"
@@ -13,7 +14,6 @@ import (
 	"sync"
 )
 
-var def = 100
 var pool *redis.Pool
 var db *sql.DB
 var walkuserdata_chan chan *walkuserdata
@@ -27,7 +27,6 @@ type walkuserdata struct {
 func init() {
 
 	walkuserdata_chan = make(chan *walkuserdata, 16)
-
 }
 
 func SetEnv(poolin *redis.Pool, dbin *sql.DB) {
@@ -123,6 +122,8 @@ func OneUserActiveStat(uid int, arg *Arg_s, wdsin []WalkDayData) {
 	}
 
 	var slice_uds []Userdaystat_s
+	var writensq nsq.Write_nsq_struct
+	var writenode nsq.Write_node_struct
 	//做完一个用户一天的统计后，将结果无情的传出去,供团队天处理..
 	//所以结果中应该保留uid,aid及团队统计要用的一切数据..
 
@@ -192,6 +193,15 @@ func OneUserActiveStat(uid int, arg *Arg_s, wdsin []WalkDayData) {
 
 		Logger.Error("in HandleUserDayDB ", err, "uid: ", uid, "gid ", arg.Gid)
 	}
+
+	writenode.Userid = uid
+	writenode.Activeid = arg.Aid
+	writenode.Groupid = arg.Gid
+	writenode.Minwalkdate = wdsout[0].WalkDate
+	writenode.Maxwalkdate = wdsout[len(wdsout)-1].WalkDate
+	writensq.Userdata = append(writensq.Userdata, writenode)
+	//encode json 并且发送至NSQ ..
+	nsq.Encode(writensq)
 
 	//个人总统计（入DB）
 	//比较用户加入活动的时间与活动开始的时间，取其中的大值，作为Start;

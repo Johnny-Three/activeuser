@@ -4,6 +4,7 @@ import (
 	. "activeuser/austat"
 	. "activeuser/envbuild"
 	. "activeuser/logs"
+	"activeuser/nsq"
 	. "activeuser/nsq"
 	. "activeuser/redisop"
 	"activeuser/strategy"
@@ -56,6 +57,9 @@ func main() {
 		ConsumerRun(EnvConf.Consumerip + ":" + EnvConf.Consumerport)
 	}()
 
+	//初始化Producer
+	NewProducer(EnvConf.Producerip+":"+EnvConf.Producerport, "for_gu_stat")
+
 	//统计
 	go func() {
 
@@ -84,6 +88,7 @@ func main() {
 
 				//如果此配置项打开，需要过滤活动
 				if true == strings.EqualFold(EnvConf.Filterstatus, "on") {
+					//带过滤项的calc
 					CalcuserscoreF(uwd.Uid, value, uwd.Walkdays)
 				} else {
 					Calcuserscore(uwd.Uid, value, uwd.Walkdays)
@@ -91,6 +96,9 @@ func main() {
 			}
 		}
 	}()
+
+	//生产AG所用消息...
+	nsq.GoWriteToNsq("stat_for_au")
 
 	select {}
 }
