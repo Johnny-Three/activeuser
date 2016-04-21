@@ -1,4 +1,4 @@
-package nsq
+package usensq
 
 import (
 	. "activeuser/logs"

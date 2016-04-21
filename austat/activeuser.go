@@ -4,10 +4,10 @@ import (
 	. "activeuser/dbop"
 	. "activeuser/envbuild"
 	. "activeuser/logs"
-	"activeuser/nsq"
 	. "activeuser/redisop"
 	"activeuser/strategy"
 	. "activeuser/structure"
+	"activeuser/usensq"
 	"database/sql"
 	"fmt"
 	"github.com/garyburd/redigo/redis"
@@ -122,8 +122,8 @@ func OneUserActiveStat(uid int, arg *Arg_s, wdsin []WalkDayData) {
 	}
 
 	var slice_uds []Userdaystat_s
-	var writensq nsq.Write_nsq_struct
-	var writenode nsq.Write_node_struct
+	var writensq usensq.Write_nsq_struct
+	var writenode usensq.Write_node_struct
 	//做完一个用户一天的统计后，将结果无情的传出去,供团队天处理..
 	//所以结果中应该保留uid,aid及团队统计要用的一切数据..
 
@@ -201,7 +201,7 @@ func OneUserActiveStat(uid int, arg *Arg_s, wdsin []WalkDayData) {
 	writenode.Maxwalkdate = wdsout[len(wdsout)-1].WalkDate
 	writensq.Userdata = append(writensq.Userdata, writenode)
 	//encode json 并且发送至NSQ ..
-	nsq.Encode(writensq)
+	usensq.Encode(writensq)
 
 	//个人总统计（入DB）
 	//比较用户加入活动的时间与活动开始的时间，取其中的大值，作为Start;

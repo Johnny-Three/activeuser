@@ -4,15 +4,17 @@ import (
 	. "activeuser/austat"
 	. "activeuser/envbuild"
 	. "activeuser/logs"
-	"activeuser/nsq"
-	. "activeuser/nsq"
 	. "activeuser/redisop"
 	"activeuser/strategy"
+	"activeuser/usensq"
 	"flag"
 	"fmt"
+	"github.com/bitly/go-nsq"
 	"os"
 	"strings"
 )
+
+var consumer *nsq.Consumer
 
 func CheckError(err error) {
 	if err != nil {
@@ -43,29 +45,48 @@ func main() {
 		panic("统计策略load错误")
 	}
 
-	//对接NSQ
-	err = NewConsummer("base_data_upload", "activestat")
+	//对接NSQ，消费上传消息
+	consumer, err = usensq.NewConsummer("base_data_upload", "activestat")
 	if err != nil {
 		panic(err)
 	}
 
-	//au环境参数传入...
-	SetEnv(Pool, Db)
+	//Consumer运行，消费消息..
+	go func(consumer *nsq.Consumer) {
 
-	//Consumer开始运行，消费消息
-	go func() {
-		ConsumerRun(EnvConf.Consumerip + ":" + EnvConf.Consumerport)
-	}()
+		err := usensq.ConsumerRun(consumer, "base_data_upload", EnvConf.Consumerip+":"+EnvConf.Consumerport)
+		if err != nil {
+			panic(err)
+		}
+	}(consumer)
+
+	//对接NSQ，消费任务消息
+	consumer, err = usensq.NewConsummer("task_to_au", "activestat")
+	if err != nil {
+		panic(err)
+	}
+
+	//Consumer运行，消费消息..
+	go func(consumer *nsq.Consumer) {
+
+		err := usensq.ConsumerRun(consumer, "task_to_au", EnvConf.Consumerip+":"+EnvConf.Consumerport)
+		if err != nil {
+			panic(err)
+		}
+	}(consumer)
 
 	//初始化Producer
-	NewProducer(EnvConf.Producerip+":"+EnvConf.Producerport, "for_gu_stat")
+	usensq.NewProducer(EnvConf.Producerip+":"+EnvConf.Producerport, "for_gu_stat")
+
+	//au环境参数传入...
+	SetEnv(Pool, Db)
 
 	//统计
 	go func() {
 
 		for {
 
-			uwd := <-Userwalkdata_chan
+			uwd := <-usensq.Userwalkdata_chan
 
 			userinfo, err := GetUserJoinGroupInfo(uwd.Uid, Pool)
 
@@ -98,7 +119,7 @@ func main() {
 	}()
 
 	//生产AG所用消息...
-	nsq.GoWriteToNsq("stat_for_au")
+	usensq.GoWriteToNsq("stat_for_au")
 
 	select {}
 }
