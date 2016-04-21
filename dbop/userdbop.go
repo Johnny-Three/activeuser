@@ -131,7 +131,7 @@ func HandleUserTotalDB(start int64, end int64, uid int, arg *Arg_s, ars *ActiveR
 	//如果arrivetime向后延迟，则更新snapshot表
 	if ifarrive == true {
 
-		//查看wanbu_snapshot_activeuser_v1表中的arrivetime，如果不存在查出来为0（有用）
+		//查看wanbu_snapshot_activeuser_X表中的arrivetime，如果不存在查出来为0（有用）
 		qs := `select IFNULL(sum(arrivetime),0) from ?   
 		where activeid=?  AND userid=?`
 
@@ -251,121 +251,5 @@ func HandleUserDayDB(slice_uds []Userdaystat_s, tablen string, db *sql.DB) error
 	fmt.Printf("write [%d] record into %s\n", tcount1, "wanbu_stat_activeuser_day"+tablen)
 
 	return nil
-
-}
-
-//加载未关闭的活动中所有的用户
-func Checkusers(db *sql.DB) (r_map_u_a *map[int][]Arg_s, err error) {
-
-	//a.activetime < b.closetime 确保活动统计结束前加入活动，否则有问题
-	qs := `select a.userid,a.activeid,a.groupid,a.activetime from wanbu_group_user a, wanbu_club_online b 
-		where a.activeid = b.activeid AND  b.endtime > UNIX_TIMESTAMP()  
-		and b.starttime < UNIX_TIMESTAMP() 
-		and a.activetime < b.closetime and b.storeflag <2 order by userid desc`
-
-	rows, err := db.Query(qs)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	map_u_a := make(map[int][]Arg_s)
-	var actives []Arg_s = []Arg_s{}
-	var active Arg_s = Arg_s{}
-	var former, next int
-	for rows.Next() {
-
-		err := rows.Scan(&next, &active.Aid, &active.Gid, &active.Jointime)
-		if err != nil {
-			return nil, err
-		}
-
-		if former == 0 {
-			former = next
-		}
-
-		if former == next {
-
-			actives = append(actives, active)
-			continue
-		}
-
-		user := Uarg_s{}
-		user.Uid = former
-		user.Actives = actives
-		map_u_a[user.Uid] = user.Actives
-
-		former = next
-		actives = nil
-		actives = append(actives, active)
-
-	}
-
-	if actives != nil {
-
-		user := Uarg_s{}
-		user.Uid = former
-		user.Actives = actives
-		map_u_a[user.Uid] = user.Actives
-	}
-	return &map_u_a, nil
-
-}
-
-//加载未关闭的活动中所有的用户
-func Loadallusers(db *sql.DB) (n []Uarg_s, err error) {
-
-	//a.activetime < b.closetime 确保活动统计结束前加入活动，否则有问题
-	qs := `select a.userid,a.activeid,a.groupid,a.activetime from wanbu_group_user a, wanbu_club_online b 
-		where a.activeid = b.activeid AND  b.endtime > UNIX_TIMESTAMP()  
-		and b.starttime < UNIX_TIMESTAMP() 
-		and a.activetime < b.closetime and b.storeflag <2 order by userid desc limit 10000`
-
-	rows, err := db.Query(qs)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var users []Uarg_s = []Uarg_s{}
-	var actives []Arg_s = []Arg_s{}
-	var active Arg_s = Arg_s{}
-	var former, next int
-	for rows.Next() {
-
-		err := rows.Scan(&next, &active.Aid, &active.Gid, &active.Jointime)
-		if err != nil {
-			return nil, err
-		}
-
-		if former == 0 {
-			former = next
-		}
-
-		if former == next {
-
-			actives = append(actives, active)
-			continue
-		}
-
-		user := Uarg_s{}
-		user.Uid = former
-		user.Actives = actives
-		users = append(users, user)
-
-		former = next
-		actives = nil
-		actives = append(actives, active)
-
-	}
-
-	if actives != nil {
-
-		user := Uarg_s{}
-		user.Uid = former
-		user.Actives = actives
-		users = append(users, user)
-	}
-	return users, nil
 
 }

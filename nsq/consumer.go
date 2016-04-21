@@ -63,9 +63,9 @@ func NewConsummer(topic, channel string) error {
 	}
 
 	config = nsq.NewConfig()
-	//心跳间隔时间
+	//心跳间隔时间 3s
 	config.HeartbeatInterval = 3000000000
-	//10分钟去发现一次，发现topic为指定的nsqd
+	//1分钟去发现一次，发现topic为指定的nsqd
 	config.LookupdPollInterval = 60000000000
 	//config.LocalAddr, _ = net.ResolveTCPAddr("tcp", envconf.Consumerip+":"+envconf.Consumerport)
 
@@ -82,6 +82,7 @@ func NewConsummer(topic, channel string) error {
 
 	//defer logfile.Close()
 	logger = log.New(logfile, "\r\n", log.Ldate|log.Ltime|log.Llongfile)
+	logger = log.New(os.Stdin, "", log.LstdFlags)
 
 	consumer, err = nsq.NewConsumer(topic, channel, config)
 	if err != nil {
@@ -97,7 +98,9 @@ func ConsumerRun(address string) error {
 	consumer.AddHandler(nsq.HandlerFunc(h.HandleMsg))
 	h.msgchan = make(chan *nsq.Message, 1024)
 
+	//fmt.Println("Consumer address ", address)
 	err = consumer.ConnectToNSQLookupd(address)
+	//err = consumer.ConnectToNSQD(address)
 	if err != nil {
 		return err
 	}
