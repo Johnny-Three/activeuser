@@ -8,6 +8,15 @@ import (
 	"strings"
 )
 
+type Task_credit_struct struct {
+	Seq      int64   `json:"seq"`
+	Type     int     `json:"type"`
+	Activeid int     `json:"activeid"`
+	Userid   int     `json:"userid"`
+	Bonus    float64 `json:"credit"`
+	Date     int64   `json:"date"`
+}
+
 type Arg_s struct {
 	Aid      int
 	Gid      int

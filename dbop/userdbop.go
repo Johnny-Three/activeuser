@@ -253,3 +253,101 @@ func HandleUserDayDB(slice_uds []Userdaystat_s, tablen string, db *sql.DB) error
 	return nil
 
 }
+
+//todo..需要加入分值。。
+func HandleTaskBonusDB(cin *Task_credit_struct, bonus float64, gid int, tablen string, db *sql.DB) error {
+
+	//根据任务加分的type，决定插入c5 or c6
+	//需要计算总分数
+
+	us := Userdaystat_s{}
+	exist := false
+	var updatetime int64
+
+	//查找当前是否有记录,有的话加上奖励积分
+	qs := "SELECT * from  wanbu_stat_activeuser_day" + tablen +
+		" where userid=? and activeid = ? and walkdate=?"
+
+	rows, err := db.Query(qs, cin.Userid, cin.Activeid, cin.Date)
+
+	if err != nil {
+		return err
+	}
+
+	defer rows.Close()
+	for rows.Next() {
+
+		err := rows.Scan(&us.Uid, &us.Walkdate, &us.Gid, &updatetime, &us.Stepnumber, &us.Stepdistance,
+			&us.Steptime, &us.Credit1, &us.Credit2, &us.Credit3, &us.Credit4, &us.Credit5, &us.Credit6, &us.Credit7,
+			&us.Credit8, &us.Stepdaypass)
+		if err != nil {
+			return err
+		}
+
+		exist = true
+	}
+
+	//存在记录，则更新某些字段
+	if true == exist {
+
+		//类型为任务加分..
+		if cin.Type == 0 {
+
+			sqlStr := "update wanbu_stat_activeuser_day" + tablen +
+				"set updatetime=UNIX_TIMESTAMP(),credit1=?,credit5=?  where userid=? and activeid = ? and walkdate=?"
+
+			_, err := db.Exec(sqlStr, us.Credit1+cin.Bonus, cin.Bonus, cin.Userid, cin.Activeid, cin.Date)
+
+			if err != nil {
+				return err
+			}
+
+		} else if cin.Type == 1 { //类型为手动加分
+
+			sqlStr := "update wanbu_stat_activeuser_day" + tablen +
+				"set updatetime=UNIX_TIMESTAMP(),credit1=?,credit6=?  where userid=? and activeid = ? and walkdate=?"
+
+			_, err := db.Exec(sqlStr, us.Credit1+cin.Bonus, cin.Bonus, cin.Userid, cin.Activeid, cin.Date)
+
+			if err != nil {
+				return err
+			}
+		}
+
+	}
+
+	//不存在记录，则插入一条记录
+	if false == exist {
+
+		//类型为任务加分..
+		if cin.Type == 0 {
+
+			sqlStr := "INSERT INTO wanbu_stat_activeuser_day" + tablen +
+				"(activeid, userid, walkdate,timestamp, updatetime, groupid,stepnumber, stepdistance, steptime, credit1," +
+				"credit2, credit3,  credit4, credit5, credit6,credit7,credit8, stepdaypass) values"
+			sqlStr += `(?,?,?,?,UNIX_TIMESTAMP(),?,0,0,0,0,0,0,0,?,0,0,0,0)`
+
+			_, err := db.Exec(sqlStr, cin.Activeid, cin.Userid, cin.Date, cin.Date, gid, bonus)
+
+			if err != nil {
+				return err
+			}
+
+		} else if cin.Type == 1 { //类型为手动加分
+
+			sqlStr := "INSERT INTO wanbu_stat_activeuser_day" + tablen +
+				"(activeid, userid, walkdate,timestamp, updatetime, groupid,stepnumber, stepdistance, steptime, credit1," +
+				"credit2, credit3,  credit4, credit5, credit6,credit7,credit8, stepdaypass) values"
+			sqlStr += `(?,?,?,?,UNIX_TIMESTAMP(),?,0,0,0,0,0,0,0,0,?,0,0,0)`
+
+			_, err := db.Exec(sqlStr, cin.Activeid, cin.Userid, cin.Date, cin.Date, gid, bonus)
+
+			if err != nil {
+				return err
+			}
+		}
+
+	}
+
+	return nil
+}

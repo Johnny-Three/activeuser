@@ -33,10 +33,6 @@ func main() {
 	err := EnvBuild()
 	CheckError(err)
 
-	//配置文件中其它参数的读写,NSQ consumer IP 及 PORT,NSQ producer IP 及 PROT,活动过滤开关及过滤的活动ID
-	err = ConfigParse()
-	CheckError(err)
-
 	//测试活动ID
 	//SetRedis(7806, Pool)
 
@@ -81,12 +77,12 @@ func main() {
 	//au环境参数传入...
 	SetEnv(Pool, Db)
 
-	//统计
+	//统计口子1====统计从数据上传过来的消息
 	go func() {
 
 		for {
 
-			uwd := <-usensq.Userwalkdata_chan
+			uwd := <-usensq.User_walk_data_chan
 
 			userinfo, err := GetUserJoinGroupInfo(uwd.Uid, Pool)
 
@@ -113,6 +109,43 @@ func main() {
 					CalcuserscoreF(uwd.Uid, value, uwd.Walkdays)
 				} else {
 					Calcuserscore(uwd.Uid, value, uwd.Walkdays)
+				}
+			}
+		}
+	}()
+
+	//统计口子2====统计从任务系统过来的消息
+	go func() {
+
+		for {
+
+			tc := <-usensq.User_task_credit_chan
+			//找到这个ACTIVEID，其余的不管
+			userinfo, err := GetUserJoinOneGroup(tc.Userid, tc.Activeid, Pool)
+
+			//如果查找用户缓存出现问题...记录问题，继续工作
+			if err != nil {
+				Logger.Critical(err)
+				continue
+			}
+
+			if userinfo == nil {
+
+				Logger.Critical("加分请求【", tc, "】", "失败，因为没有正在进行的这个活动，请查证后再加")
+				continue
+			}
+
+			//一定存在，已经从缓存中构造出来数据结构..
+			value, exist := (*userinfo)[tc.Userid]
+			fmt.Println(tc)
+			if exist == true {
+
+				//如果此配置项打开，需要过滤活动
+				if true == strings.EqualFold(EnvConf.Filterstatus, "on") {
+					//带过滤项的calc
+					CalccreditscoreF(&value[0], &tc)
+				} else {
+					Calccreditscore(&value[0], &tc)
 				}
 			}
 		}

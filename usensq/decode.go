@@ -14,10 +14,31 @@ type User_walkdays_struct struct {
 	Walkdays []WalkDayData
 }
 
-var Userwalkdata User_walkdays_struct
-var Userwalkdata_chan chan User_walkdays_struct
+var User_walk_data_chan chan User_walkdays_struct
+var User_task_credit_chan chan Task_credit_struct
 
-func Decode(msg string) error {
+func Decodet(msg string) error {
+
+	js, err := simplejson.NewJson([]byte(msg))
+	if err != nil {
+		errback := fmt.Sprintf("decode json error the error msg is %s", err.Error())
+		return errors.New(errback)
+	}
+
+	var tc Task_credit_struct
+	tc.Seq = js.Get("seq").MustInt64()
+	tc.Type = js.Get("type").MustInt()
+	tc.Activeid = js.Get("activeid").MustInt()
+	tc.Userid = js.Get("userid").MustInt()
+	tc.Bonus = js.Get("credit").MustFloat64()
+	tc.Date = js.Get("date").MustInt64()
+
+	User_task_credit_chan <- tc
+
+	return nil
+}
+
+func Decodeu(msg string) error {
 
 	js, err := simplejson.NewJson([]byte(msg))
 	if err != nil {
@@ -27,7 +48,7 @@ func Decode(msg string) error {
 
 	var wd WalkDayData
 	walkdays := []WalkDayData{}
-	Userwalkdata = User_walkdays_struct{}
+	userwalkdata := User_walkdays_struct{}
 
 	userid := js.Get("userid").MustInt()
 	wd.Timestamp = js.Get("timestamp").MustInt64()
@@ -69,17 +90,16 @@ func Decode(msg string) error {
 
 	}
 
-	Userwalkdata.Uid = userid
-	Userwalkdata.Walkdays = walkdays
+	userwalkdata.Uid = userid
+	userwalkdata.Walkdays = walkdays
 
-	//fmt.Println("recieve msg uid is ", userid)
-	Userwalkdata_chan <- Userwalkdata
+	User_walk_data_chan <- userwalkdata
 
 	return nil
 }
 
 func init() {
 
-	Userwalkdata_chan = make(chan User_walkdays_struct, 16)
-
+	User_task_credit_chan = make(chan Task_credit_struct, 16)
+	User_walk_data_chan = make(chan User_walkdays_struct, 16)
 }

@@ -5,6 +5,7 @@ import (
 	"activeuser/util"
 	"database/sql"
 	"flag"
+	//"fmt"
 	"github.com/garyburd/redigo/redis"
 	_ "github.com/go-sql-driver/mysql"
 	config "github.com/msbranco/goconfig"
@@ -26,6 +27,8 @@ type ConfigRead struct {
 	Producerport string
 	Filterstatus string
 	FilterAids   []int
+	Db           *sql.DB
+	Pool         *redis.Pool
 }
 
 func GetEnvConf() *ConfigRead {
@@ -109,6 +112,11 @@ func poolInit(server string) *redis.Pool {
 //EnvBuild需要正确的解析文件并且初始化DB和Redis的连接。。
 func EnvBuild() error {
 
+	//配置文件中其它参数的读写,NSQ consumer IP 及 PORT,NSQ producer IP 及 PROT,活动过滤开关及过滤的活动ID
+	err := ConfigParse()
+	if err != nil {
+		return err
+	}
 	//get conf
 	cf, _ = config.ReadConfigFile(config_file_path)
 	rdip1, _ := cf.GetString("DBCONN1", "IP")
@@ -129,6 +137,9 @@ func EnvBuild() error {
 	Db.SetMaxOpenConns(100)
 	Db.SetMaxIdleConns(10)
 	Db.Ping()
+
+	EnvConf.Db = Db
+	EnvConf.Pool = Pool
 
 	return nil
 }

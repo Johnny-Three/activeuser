@@ -35,8 +35,23 @@ func StepdistanceStat(credit1 float64, ar *ActiveRule) (n int64) {
 	return rv
 }
 
+//加分统计..
+func TaskBonusStat(credit float64, ar *ActiveRule, db *sql.DB) float64 {
+
+	//步数制活动，需要将C5处理一下，C5从里程变换为步数
+	if ar.Systemflag == 0 {
+		//对0特殊处理一下，如果网站失误写成负数
+		if ar.Stepwidth <= 0 {
+			ar.Stepwidth = 100
+		}
+		credit = credit * 100000 / float64(ar.Stepwidth)
+	}
+
+	return credit
+}
+
 //任务奖励统计，写credit5\credit6\credit7字段。credit5为任务奖励、credit6为手动加分奖励、credit7为处方奖励
-//错误情况返回nil
+//错误情况返回nil，TODO：：修正此方法，这个只计算C7，把统计分开两路，一个数据上传，一个
 func TaskCreditStat(wd *WalkDayData, ar *ActiveRule, uid int, db *sql.DB) (n []float64) {
 
 	var c5 float64

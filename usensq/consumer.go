@@ -31,9 +31,8 @@ func (h *Handlet) Process() {
 	for {
 		select {
 		case m := <-h.msgchan:
-			fmt.Println("我拿到了一条消息，打出来看看是什么：")
-			fmt.Println(string(m.Body))
-			err := Decode(string(m.Body))
+			//fmt.Println(string(m.Body))
+			err := Decodet(string(m.Body))
 			if err != nil {
 				Logger.Critical(err)
 			}
@@ -69,9 +68,9 @@ func (h *Handleu) Process() {
 	for {
 		select {
 		case m := <-h.msgchan:
-			fmt.Println("xxxxxxxxxxxxxxooooooooooooooo==========我拿到了一条消息，打出来看看是什么：")
+			//
 			fmt.Println(string(m.Body))
-			err := Decode(string(m.Body))
+			err := Decodeu(string(m.Body))
 			if err != nil {
 				Logger.Critical(err)
 			}
@@ -151,8 +150,6 @@ func NewConsummer(topic, channel string) (*nsq.Consumer, error) {
 }
 
 func ConsumerRun(consumer *nsq.Consumer, topic, address string) error {
-
-	fmt.Println("consumer is", consumer)
 
 	if consumer == nil {
 		return errors.New("consumer尚未初始化 ")

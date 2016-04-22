@@ -2,7 +2,7 @@ package usensq
 
 import (
 	"encoding/json"
-	"fmt"
+	//"fmt"
 )
 
 /*
@@ -41,19 +41,18 @@ type Write_node_struct struct {
 	Maxwalkdate int64 `json:"maxwalkdate"`
 }
 
-func Encode(msg Write_nsq_struct) error {
+func Encode(msg Write_nsq_struct) (string, error) {
 
 	value, err := json.Marshal(msg)
 
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	fmt.Println(string(value))
-
+	//fmt.Println(string(value))
 	Write_nsq_chan <- string(value)
 
-	return nil
+	return string(value), nil
 }
 
 func init() {
