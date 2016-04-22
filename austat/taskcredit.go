@@ -8,8 +8,8 @@ import (
 	"activeuser/strategy"
 	. "activeuser/structure"
 	"activeuser/usensq"
-	//"database/sql"
 	"fmt"
+	"time"
 )
 
 func Calccreditscore(arg *Arg_s, credit *Task_credit_struct) {
@@ -81,20 +81,22 @@ func CreditStat(arg *Arg_s, credit *Task_credit_struct) {
 		return
 	}
 
-	//fmt.Println(tablen, tablev, join)
 	var writensq usensq.Write_nsq_struct
 	var writenode usensq.Write_node_struct
 
-	//HandleDB，把分加上，个人天统计及个人总统计
-	bonus := TaskBonusStat(credit.Bonus, ars, db)
+	//计算得分，包括奖励得分和奖励得分引起的stepdistance增加
+	bonus, sd := TaskBonusStat(credit.Bonus, ars)
+
 	//加分操作DB
-	err = HandleTaskBonusDB(credit, bonus, arg.Gid, tablen, db)
+	err = HandleTaskBonusDB(credit, bonus, sd, arg.Gid, tablen, db)
 	if err != nil {
 
 		Logger.Error("in HandleTaskBonusDB ", err, "uid: ", credit.Userid, "gid ", arg.Gid)
 	}
-	//重新统计一下个人在竞赛中的成绩
-	err = HandleUserTotalDB(join, wdsout[len(wdsout)-1].WalkDate, credit.Userid, arg, ars, tablev, db)
+
+	t, _ := time.ParseInLocation("20060102", time.Now().Format("20060102"), time.Local)
+	//重新统计一下个人在竞赛中的成绩,endtime传入当前时间。
+	err = HandleUserTotalDB(join, t.Unix(), credit.Userid, arg, ars, tablev, tablen, db)
 	if err != nil {
 
 		Logger.Error("in HandleUserTotalDB", err, "uid:", credit.Userid, "gid", arg.Gid)
@@ -107,8 +109,6 @@ func CreditStat(arg *Arg_s, credit *Task_credit_struct) {
 	writenode.Maxwalkdate = wdsout[len(wdsout)-1].WalkDate
 	writensq.Userdata = append(writensq.Userdata, writenode)
 	//encode json 并且发送至NSQ ..
-	json, _ := usensq.Encode(writensq)
-
-	fmt.Println("处理完了，老大放心，干干净净！", json)
-
+	usensq.Encode(writensq)
+	//fmt.Println("处理完了，老大放心，干干净净！", json)
 }

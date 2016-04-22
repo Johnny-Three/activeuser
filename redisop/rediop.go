@@ -34,7 +34,7 @@ func SetRedis(aid int, pool *redis.Pool) {
 		Stepwidth:        0,
 		AppendPersonRule: "",
 		Distanceflag:     2,
-		Systemflag:       0,
+		Systemflag:       1,
 		Endstattype:      0,
 		Stattimeflag:     1,
 		Upstepline:       0,

@@ -18,11 +18,12 @@ var snapend int64
 //从个人天表中拿到一些数据统计出结果，活动开始到这次统计之间
 //算出这次统计的总成绩，相加
 //到达终点写wanbu_snapshot_activeuser_v1表
-func HandleUserTotalDB(start int64, end int64, uid int, arg *Arg_s, ars *ActiveRule, tablev string, db *sql.DB) error {
+func HandleUserTotalDB(start int64, end int64, uid int, arg *Arg_s, ars *ActiveRule, tablev, tablen string, db *sql.DB) error {
 
 	qs := `SELECT stepdistance,(CASE WHEN stepnumber>=10000 THEN 1 ELSE 0 END),stepnumber,
 	credit1,credit2,credit3,credit4,credit5,credit6,credit7,credit8,stepdaypass,timestamp,walkdate
-	FROM wanbu_stat_activeuser_day_v1_n0 WHERE  activeid=?  AND userid=? AND  
+	FROM wanbu_stat_activeuser_day` + tablen
+	qs += ` WHERE  activeid=?  AND userid=? AND  
 	walkdate>=? AND walkdate<=? ORDER BY walkdate`
 
 	rows, err := db.Query(qs, arg.Aid, uid, start, end)
@@ -115,7 +116,7 @@ func HandleUserTotalDB(start int64, end int64, uid int, arg *Arg_s, ars *ActiveR
 		        stepnumberp = values(stepnumberp),stepdistancep=values(stepdistancep),credit1p=VALUES(credit1p),
 		        credit2p=VALUES(credit2p),credit3p=VALUES(credit3p),credit4p=VALUES(credit4p),credit5p=VALUES(credit5p),
 		        credit6p=VALUES(credit6p),credit7p=VALUES(credit7p),credit8p=VALUES(credit8p),updatetime=UNIX_TIMESTAMP(),
-		        stepdaypassp=VALUES(stepdaypassp)`
+		        walkdate=VALUES(walkdate),stepdaypassp=VALUES(stepdaypassp)`
 
 	_, err1 := db.Exec(is, arg.Aid, uid, tmp.Timestamp, end, start, tmp.Stepdaywanbu, tmp.Stepnumber,
 		tmp.Stepdistance, tmp.Credit1, tmp.Credit2, tmp.Credit3, tmp.Credit4, tmp.Stepdaypass, tmp.Credit5,
@@ -123,7 +124,7 @@ func HandleUserTotalDB(start int64, end int64, uid int, arg *Arg_s, ars *ActiveR
 
 	if err1 != nil {
 
-		fmt.Println("执行SQL问题：" + err1.Error())
+		//fmt.Println("执行SQL问题：" + err1.Error())
 		return errors.New("执行SQL问题：" + err1.Error())
 	}
 
@@ -255,7 +256,7 @@ func HandleUserDayDB(slice_uds []Userdaystat_s, tablen string, db *sql.DB) error
 }
 
 //todo..需要加入分值。。
-func HandleTaskBonusDB(cin *Task_credit_struct, bonus float64, gid int, tablen string, db *sql.DB) error {
+func HandleTaskBonusDB(cin *Task_credit_struct, bonus float64, sd int64, gid int, tablen string, db *sql.DB) error {
 
 	//根据任务加分的type，决定插入c5 or c6
 	//需要计算总分数
@@ -277,9 +278,10 @@ func HandleTaskBonusDB(cin *Task_credit_struct, bonus float64, gid int, tablen s
 	defer rows.Close()
 	for rows.Next() {
 
-		err := rows.Scan(&us.Uid, &us.Walkdate, &us.Gid, &updatetime, &us.Stepnumber, &us.Stepdistance,
-			&us.Steptime, &us.Credit1, &us.Credit2, &us.Credit3, &us.Credit4, &us.Credit5, &us.Credit6, &us.Credit7,
-			&us.Credit8, &us.Stepdaypass)
+		err := rows.Scan(&us.Aid, &us.Uid, &us.Walkdate, &updatetime, &us.Timestamp, &us.Credit1, &us.Credit2,
+			&us.Credit3, &us.Credit4, &us.Stepnumber, &us.Stepdistance, &us.Steptime, &us.Gid, &us.Stepdaypass,
+			&us.Credit5, &us.Credit6, &us.Credit7, &us.Credit8)
+
 		if err != nil {
 			return err
 		}
@@ -294,9 +296,9 @@ func HandleTaskBonusDB(cin *Task_credit_struct, bonus float64, gid int, tablen s
 		if cin.Type == 0 {
 
 			sqlStr := "update wanbu_stat_activeuser_day" + tablen +
-				"set updatetime=UNIX_TIMESTAMP(),credit1=?,credit5=?  where userid=? and activeid = ? and walkdate=?"
+				" set updatetime=UNIX_TIMESTAMP(),stepdistance=?,credit1=?,credit5=?  where userid=? and activeid = ? and walkdate=?"
 
-			_, err := db.Exec(sqlStr, us.Credit1+cin.Bonus, cin.Bonus, cin.Userid, cin.Activeid, cin.Date)
+			_, err := db.Exec(sqlStr, us.Stepdistance+sd, us.Credit1+bonus, us.Credit5+bonus, cin.Userid, cin.Activeid, cin.Date)
 
 			if err != nil {
 				return err
@@ -305,9 +307,9 @@ func HandleTaskBonusDB(cin *Task_credit_struct, bonus float64, gid int, tablen s
 		} else if cin.Type == 1 { //类型为手动加分
 
 			sqlStr := "update wanbu_stat_activeuser_day" + tablen +
-				"set updatetime=UNIX_TIMESTAMP(),credit1=?,credit6=?  where userid=? and activeid = ? and walkdate=?"
+				" set updatetime=UNIX_TIMESTAMP(),stepdistance=?,credit1=?,credit6=?  where userid=? and activeid = ? and walkdate=?"
 
-			_, err := db.Exec(sqlStr, us.Credit1+cin.Bonus, cin.Bonus, cin.Userid, cin.Activeid, cin.Date)
+			_, err := db.Exec(sqlStr, us.Stepdistance+sd, us.Credit1+bonus, us.Credit6+bonus, cin.Userid, cin.Activeid, cin.Date)
 
 			if err != nil {
 				return err
@@ -325,9 +327,9 @@ func HandleTaskBonusDB(cin *Task_credit_struct, bonus float64, gid int, tablen s
 			sqlStr := "INSERT INTO wanbu_stat_activeuser_day" + tablen +
 				"(activeid, userid, walkdate,timestamp, updatetime, groupid,stepnumber, stepdistance, steptime, credit1," +
 				"credit2, credit3,  credit4, credit5, credit6,credit7,credit8, stepdaypass) values"
-			sqlStr += `(?,?,?,?,UNIX_TIMESTAMP(),?,0,0,0,0,0,0,0,?,0,0,0,0)`
+			sqlStr += `(?,?,?,?,UNIX_TIMESTAMP(),?,0,?,0,?,0,0,0,?,0,0,0,0)`
 
-			_, err := db.Exec(sqlStr, cin.Activeid, cin.Userid, cin.Date, cin.Date, gid, bonus)
+			_, err := db.Exec(sqlStr, cin.Activeid, cin.Userid, cin.Date, cin.Date, gid, sd, bonus, bonus)
 
 			if err != nil {
 				return err
@@ -338,9 +340,9 @@ func HandleTaskBonusDB(cin *Task_credit_struct, bonus float64, gid int, tablen s
 			sqlStr := "INSERT INTO wanbu_stat_activeuser_day" + tablen +
 				"(activeid, userid, walkdate,timestamp, updatetime, groupid,stepnumber, stepdistance, steptime, credit1," +
 				"credit2, credit3,  credit4, credit5, credit6,credit7,credit8, stepdaypass) values"
-			sqlStr += `(?,?,?,?,UNIX_TIMESTAMP(),?,0,0,0,0,0,0,0,0,?,0,0,0)`
+			sqlStr += `(?,?,?,?,UNIX_TIMESTAMP(),?,0,?,0,?,0,0,0,0,?,0,0,0)`
 
-			_, err := db.Exec(sqlStr, cin.Activeid, cin.Userid, cin.Date, cin.Date, gid, bonus)
+			_, err := db.Exec(sqlStr, cin.Activeid, cin.Userid, cin.Date, cin.Date, gid, sd, bonus, bonus)
 
 			if err != nil {
 				return err

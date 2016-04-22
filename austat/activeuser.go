@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"github.com/garyburd/redigo/redis"
 	"sync"
+	"time"
 )
 
 var pool *redis.Pool
@@ -205,8 +206,10 @@ func OneUserActiveStat(uid int, arg *Arg_s, wdsin []WalkDayData) {
 
 	//个人总统计（入DB）
 	//比较用户加入活动的时间与活动开始的时间，取其中的大值，作为Start;
-	//上传的有效天数据slice的最后一个元素的walkdate作为end;
-	err = HandleUserTotalDB(join, wdsout[len(wdsout)-1].WalkDate, uid, arg, ars, tablev, db)
+	//当前时间的day时间戳，到零点零分，作为统计结果的end时间
+	t, _ := time.ParseInLocation("20060102", time.Now().Format("20060102"), time.Local)
+
+	err = HandleUserTotalDB(join, t.Unix(), uid, arg, ars, tablev, tablen, db)
 	if err != nil {
 
 		Logger.Error("in HandleUserTotalDB", err, "uid:", uid, "gid", arg.Gid)

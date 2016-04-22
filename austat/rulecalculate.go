@@ -25,6 +25,10 @@ func StepdistanceStat(credit1 float64, ar *ActiveRule) (n int64) {
 
 	var rv int64
 	if ar.Systemflag == 0 {
+		//对0特殊处理一下，如果网站失误写成负数
+		if ar.Stepwidth <= 0 {
+			ar.Stepwidth = 100
+		}
 		rv = int64(credit1) * int64(ar.Stepwidth)
 
 	}
@@ -36,7 +40,7 @@ func StepdistanceStat(credit1 float64, ar *ActiveRule) (n int64) {
 }
 
 //加分统计..
-func TaskBonusStat(credit float64, ar *ActiveRule, db *sql.DB) float64 {
+func TaskBonusStat(credit float64, ar *ActiveRule) (float64, int64) {
 
 	//步数制活动，需要将C5处理一下，C5从里程变换为步数
 	if ar.Systemflag == 0 {
@@ -47,7 +51,9 @@ func TaskBonusStat(credit float64, ar *ActiveRule, db *sql.DB) float64 {
 		credit = credit * 100000 / float64(ar.Stepwidth)
 	}
 
-	return credit
+	stepdistance := StepdistanceStat(credit, ar)
+
+	return credit, stepdistance
 }
 
 //任务奖励统计，写credit5\credit6\credit7字段。credit5为任务奖励、credit6为手动加分奖励、credit7为处方奖励

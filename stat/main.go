@@ -34,7 +34,7 @@ func main() {
 	CheckError(err)
 
 	//测试活动ID
-	//SetRedis(7806, Pool)
+	SetRedis(7806, Pool)
 
 	//策略加载
 	if false == strategy.Init(Db) {
