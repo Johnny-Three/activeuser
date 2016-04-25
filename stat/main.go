@@ -137,7 +137,7 @@ func main() {
 
 			//一定存在，已经从缓存中构造出来数据结构..
 			value, exist := (*userinfo)[tc.Userid]
-			fmt.Println(tc)
+			//fmt.Println(tc)
 			if exist == true {
 
 				//如果此配置项打开，需要过滤活动
