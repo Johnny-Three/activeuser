@@ -29,8 +29,7 @@ func HandleUserTotalDB(start int64, end int64, uid int, arg *Arg_s, ars *ActiveR
 	rows, err := db.Query(qs, arg.Aid, uid, start, end)
 
 	if err != nil {
-		return err
-
+		return errors.New("执行SQL问题1：" + err.Error())
 	}
 	defer rows.Close()
 
@@ -46,7 +45,7 @@ func HandleUserTotalDB(start int64, end int64, uid int, arg *Arg_s, ars *ActiveR
 			&udts.Credit7, &udts.Credit8, &udts.Stepdaypass, &udts.Timestamp, &udts.Walkdate)
 
 		if err != nil {
-			return err
+			return errors.New("执行SQL问题2：" + err.Error())
 		}
 
 		//从加入活动算到上传数据最后一天日期...
@@ -124,8 +123,7 @@ func HandleUserTotalDB(start int64, end int64, uid int, arg *Arg_s, ars *ActiveR
 
 	if err1 != nil {
 
-		//fmt.Println("执行SQL问题：" + err1.Error())
-		return errors.New("执行SQL问题：" + err1.Error())
+		return errors.New("执行SQL问题3：" + err1.Error())
 	}
 
 	//到达终点，需要查看到达日期是否提前，如果提前不操作snapshot表，保持arrivetime不变
@@ -133,12 +131,12 @@ func HandleUserTotalDB(start int64, end int64, uid int, arg *Arg_s, ars *ActiveR
 	if ifarrive == true {
 
 		//查看wanbu_snapshot_activeuser_X表中的arrivetime，如果不存在查出来为0（有用）
-		qs := `select IFNULL(sum(arrivetime),0) from ?   
-		where activeid=?  AND userid=?`
+		qs := "select IFNULL(sum(arrivetime),0) from wanbu_snapshot_activeuser" + tablev
+		qs += " where activeid=?  AND userid=?"
 
-		rows, err := db.Query(qs, "wanbu_snapshot_activeuser"+tablev, arg.Aid, uid)
+		rows, err := db.Query(qs, arg.Aid, uid)
 		if err != nil {
-			return err
+			return errors.New("执行SQL问题4：" + err.Error())
 		}
 		defer rows.Close()
 		var art int64
@@ -147,7 +145,8 @@ func HandleUserTotalDB(start int64, end int64, uid int, arg *Arg_s, ars *ActiveR
 			err := rows.Scan(&art)
 
 			if err != nil {
-				return err
+				return errors.New("执行SQL问题5：" + err.Error())
+
 			}
 		}
 
@@ -178,7 +177,7 @@ func HandleUserTotalDB(start int64, end int64, uid int, arg *Arg_s, ars *ActiveR
 			*/
 
 			tablename = "wanbu_snapshot_activeuser" + tablev
-			is := "insert into" + tablename + `(activeid,userid,timestamp,stepdaysp,stepdaywanbup,
+			is := "insert into " + tablename + `(activeid,userid,timestamp,stepdaysp,stepdaywanbup,
 				stepnumberp,stepdistancep,credit1p,credit2p,credit3p,credit4p,updatetime,arrivetime,stepdaypassp,
 				credit5p,credit6p,credit7p,credit8p) values 
         (?,?,?,DATEDIFF(FROM_UNIXTIME(?),FROM_UNIXTIME(?))+1,
@@ -204,7 +203,7 @@ func HandleUserTotalDB(start int64, end int64, uid int, arg *Arg_s, ars *ActiveR
 			_, err1 := db.Exec(us, "wanbu_stat_activeuser"+tablev, snap.Walkdate, arg.Aid, uid)
 
 			if err1 != nil {
-				return err1
+				return errors.New("执行SQL问题6：" + err1.Error())
 			}
 
 		}

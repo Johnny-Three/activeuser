@@ -2,13 +2,16 @@ package austat
 
 import (
 	. "activeuser/structure"
+	"fmt"
 	"time"
 )
 
 //判断时间，找到活动开始、统计结束、活动加入时间和上传日期中需要统计的日期..
 //如果返回的wds为空，说明无须统计
-//为方便用户总统计，返回用户加入活动的时间
+//为方便用户总统计，返回用户加入竞赛的时间
 func Validstatdays(ars *ActiveRule, arg *Arg_s, wdsin []WalkDayData) (wdsout []WalkDayData, jointime int64) {
+
+	//fmt.Println("in Validstatdays", arg)
 
 	t, _ := time.ParseInLocation("20060102", time.Now().Format("20060102"), time.Local)
 
@@ -20,15 +23,15 @@ func Validstatdays(ars *ActiveRule, arg *Arg_s, wdsin []WalkDayData) (wdsout []W
 	if ars.Prestarttime <= t.Unix() && t.Unix() <= ars.Preendtime {
 
 		//看jointime,jointime发挥一档威力
-		if arg.Jointime <= ars.Prestarttime {
+		if arg.Inittime <= ars.Prestarttime {
 
 			join = ars.Prestarttime
 
-		} else if arg.Jointime > ars.Prestarttime && arg.Jointime <= ars.Preendtime {
+		} else if arg.Inittime > ars.Prestarttime && arg.Inittime <= ars.Preendtime {
 
-			join = arg.Jointime
+			join = arg.Inittime
 
-		} else if arg.Jointime > ars.Preendtime {
+		} else if arg.Inittime > ars.Preendtime {
 			//错误数据
 			return nil, -1
 		}
@@ -95,16 +98,17 @@ func Validstatdays(ars *ActiveRule, arg *Arg_s, wdsin []WalkDayData) (wdsout []W
 	//当前日期在正式统计时间范围内，计算正式统计成绩
 	if ars.Starttime <= t.Unix() && t.Unix() <= ars.Closetime {
 
+		fmt.Println("arg.Inittime", arg.Inittime, "ars.Starttime", ars.Starttime)
 		//看jointime,jointime发挥一档威力
-		if arg.Jointime <= ars.Starttime {
+		if arg.Inittime <= ars.Starttime {
 
 			join = ars.Starttime
 
-		} else if arg.Jointime > ars.Starttime && arg.Jointime <= ars.Endtime {
+		} else if arg.Inittime > ars.Starttime && arg.Inittime <= ars.Endtime {
 
-			join = arg.Jointime
+			join = arg.Inittime
 
-		} else if arg.Jointime > ars.Endtime {
+		} else if arg.Inittime > ars.Endtime {
 			//错误数据
 			return nil, -1
 		}

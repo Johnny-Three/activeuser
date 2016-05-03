@@ -115,6 +115,8 @@ func OneUserActiveStat(uid int, arg *Arg_s, wdsin []WalkDayData) {
 
 	wdsout, join := Validstatdays(ars, arg, wdsin)
 
+	//fmt.Println("这个validdate是这个", wdsout)
+
 	if wdsout == nil {
 
 		Logger.Error("user: ", uid, " in active: ", arg.Aid, " upload walkdata between ", wdsin[0].WalkDate, " to ",
@@ -212,7 +214,7 @@ func OneUserActiveStat(uid int, arg *Arg_s, wdsin []WalkDayData) {
 	err = HandleUserTotalDB(join, t.Unix(), uid, arg, ars, tablev, tablen, db)
 	if err != nil {
 
-		Logger.Error("in HandleUserTotalDB", err, "uid:", uid, "gid", arg.Gid)
+		Logger.Error("in HandleUserTotalDB:[ ", err, " ],uid:[", uid, "],gid:[", arg.Gid, "]")
 	}
 
 }

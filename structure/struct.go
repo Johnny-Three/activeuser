@@ -18,10 +18,11 @@ type Task_credit_struct struct {
 }
 
 type Arg_s struct {
-	Aid      int
-	Gid      int
-	Jointime int64
-	Quittime int64
+	Aid      int   //activeid
+	Gid      int   //groupid
+	Jointime int64 //加入竞赛时间
+	Quittime int64 //退出活动时间
+	Inittime int64 //加入活动时间
 }
 
 type Uarg_s struct {
