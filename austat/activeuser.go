@@ -191,7 +191,7 @@ func OneUserActiveStat(uid int, arg *Arg_s, wdsin []WalkDayData) {
 		slice_uds = append(slice_uds, uds)
 	}
 
-	err = HandleUserDayDB(slice_uds, tablen, db)
+	err = HandleUserDayDB(slice_uds, ars, tablen, db)
 	if err != nil {
 
 		Logger.Error("in HandleUserDayDB ", err, "uid: ", uid, "gid ", arg.Gid)
