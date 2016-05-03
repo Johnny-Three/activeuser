@@ -52,7 +52,16 @@ func HandleUserTotalDB(start int64, end int64, uid int, arg *Arg_s, ars *ActiveR
 		tmp.Stepdistance += udts.Stepdistance
 		tmp.Stepdaywanbu += udts.Stepdaywanbu
 		tmp.Stepnumber += udts.Stepnumber
-		tmp.Credit1 += udts.Credit1
+		//特别需要注意credit1如果等于0，因为如果没有贡献值，timestamp和walkdate不需要更新
+		if udts.Credit1 == 0 {
+
+			tmp.Credit1 += udts.Credit1
+		} else {
+
+			tmp.Credit1 += udts.Credit1
+			tmp.Timestamp = udts.Timestamp
+			tmp.Walkdate = udts.Walkdate
+		}
 		tmp.Credit2 += udts.Credit2
 		tmp.Credit3 += udts.Credit3
 		tmp.Credit4 += udts.Credit4
@@ -61,8 +70,6 @@ func HandleUserTotalDB(start int64, end int64, uid int, arg *Arg_s, ars *ActiveR
 		tmp.Credit7 += udts.Credit7
 		tmp.Credit8 += udts.Credit8
 		tmp.Stepdaypass += udts.Stepdaypass
-		tmp.Timestamp = udts.Timestamp
-		tmp.Walkdate = udts.Walkdate
 
 		//准备素材，稍后看是否需要插入或更新snap_shot表..
 		if tmp.Stepdistance >= ars.Enddistance && ifarrive == false {
@@ -217,7 +224,7 @@ func HandleUserTotalDB(start int64, end int64, uid int, arg *Arg_s, ars *ActiveR
 	return nil
 }
 
-func HandleUserDayDB(slice_uds []Userdaystat_s, tablen string, db *sql.DB) error {
+func HandleUserDayDB(slice_uds []Userdaystat_s, ars *ActiveRule, tablen string, db *sql.DB) error {
 
 	sqlStr := "INSERT INTO wanbu_stat_activeuser_day" + tablen +
 		"(activeid, userid, walkdate,timestamp, updatetime, groupid,stepnumber, stepdistance, steptime, credit1," +
@@ -227,9 +234,15 @@ func HandleUserDayDB(slice_uds []Userdaystat_s, tablen string, db *sql.DB) error
 
 	for _, uds := range slice_uds {
 		sqlStr += "(?,?,?,?,UNIX_TIMESTAMP(),?,?,?,?,?,?,?,?,?,?,?,?,?),"
-		vals = append(vals, uds.Aid, uds.Uid, uds.Walkdate, uds.Timestamp, uds.Gid, uds.Stepnumber, uds.Stepdistance,
-			uds.Steptime, uds.Credit1, uds.Credit2, uds.Credit3, uds.Credit4, uds.Credit5,
-			uds.Credit6, uds.Credit7, uds.Credit8, uds.Stepdaypass)
+		if ars.Systemflag == 0 {
+			vals = append(vals, uds.Aid, uds.Uid, uds.Walkdate, uds.Timestamp, uds.Gid, uds.Stepnumber, uds.Stepdistance,
+				uds.Steptime, uds.Credit1, uds.Credit2, uds.Credit3, uds.Credit4, uds.Credit5,
+				uds.Credit6, uds.Credit7, uds.Credit8, uds.Stepdaypass)
+		} else {
+			vals = append(vals, uds.Aid, uds.Uid, uds.Walkdate, uds.Timestamp, uds.Gid, uds.Credit1, uds.Stepdistance,
+				uds.Steptime, uds.Credit1, uds.Credit2, uds.Credit3, uds.Credit4, uds.Credit5,
+				uds.Credit6, uds.Credit7, uds.Credit8, uds.Stepdaypass)
+		}
 	}
 	//trim the last ,
 	sqlStr = sqlStr[0 : len(sqlStr)-1]
