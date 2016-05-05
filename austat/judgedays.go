@@ -98,7 +98,6 @@ func Validstatdays(ars *ActiveRule, arg *Arg_s, wdsin []WalkDayData) (wdsout []W
 	//当前日期在正式统计时间范围内，计算正式统计成绩
 	if ars.Starttime <= t.Unix() && t.Unix() <= ars.Closetime {
 
-		fmt.Println("arg.Inittime", arg.Inittime, "ars.Starttime", ars.Starttime)
 		//看jointime,jointime发挥一档威力
 		if arg.Inittime <= ars.Starttime {
 

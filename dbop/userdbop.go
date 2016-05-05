@@ -217,8 +217,9 @@ func HandleUserTotalDB(uid int, arg *Arg_s, ars *ActiveRule, tablev, tablen stri
 				return errors.New("insert into wanbu_snapshot_activeuser " + err0.Error())
 			}
 
-			us := `update ? set arrivetime=? where activeid=? and userid=?`
-			_, err1 := db.Exec(us, "wanbu_stat_activeuser"+tablev, snap.Walkdate, arg.Aid, uid)
+			us := "update " + "wanbu_stat_activeuser"+tablev,
+			us += " set arrivetime=? where activeid=? and userid=?"
+			_, err1 := db.Exec(us, snap.Walkdate, arg.Aid, uid)
 
 			if err1 != nil {
 				return errors.New("执行SQL问题6：" + err1.Error())
