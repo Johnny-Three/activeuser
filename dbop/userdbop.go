@@ -16,9 +16,27 @@ var tcount1 uint32
 var snapend int64
 
 //从个人天表中拿到一些数据统计出结果，活动开始到这次统计之间
+//比较用户加入活动的时间与活动开始的时间，取其中的大值，作为Start;
 //算出这次统计的总成绩，相加
 //到达终点写wanbu_snapshot_activeuser_v1表
-func HandleUserTotalDB(start int64, end int64, uid int, arg *Arg_s, ars *ActiveRule, tablev, tablen string, db *sql.DB) error {
+func HandleUserTotalDB(uid int, arg *Arg_s, ars *ActiveRule, tablev, tablen string, db *sql.DB) error {
+
+	var start, end int64
+	//统计开始时间判断，如果用户加入竞赛时间小于活动开始时间，那么开始时间为活动开始时间，反之，按加入竞赛时间
+	if arg.Jointime < ars.Starttime {
+
+		start = ars.Starttime
+	} else {
+		start = arg.Jointime
+	}
+
+	//统计结束时间判断，如果活动结束时间小于当前时间，那么，以结束时间为准，反之，按当前时间
+	today, _ := time.ParseInLocation("20060102", time.Now().Format("20060102"), time.Local)
+	if ars.Endtime < today.Unix() {
+		end = ars.Endtime
+	} else {
+		end = today.Unix()
+	}
 
 	qs := `SELECT stepdistance,(CASE WHEN stepnumber>=10000 THEN 1 ELSE 0 END),stepnumber,
 	credit1,credit2,credit3,credit4,credit5,credit6,credit7,credit8,stepdaypass,timestamp,walkdate
@@ -100,13 +118,6 @@ func HandleUserTotalDB(start int64, end int64, uid int, arg *Arg_s, ars *ActiveR
 
 		}
 
-	}
-
-	today, _ := time.ParseInLocation("20060102", time.Now().Format("20060102"), time.Local)
-	if ars.Endtime < today.Unix() {
-		end = ars.Endtime
-	} else {
-		end = today.Unix()
 	}
 
 	//未到达终点，将tmp中的数据更新至用户总统计表中。。(到不到终点都要更新)

@@ -9,7 +9,6 @@ import (
 	. "activeuser/structure"
 	"activeuser/usensq"
 	"fmt"
-	"time"
 )
 
 func Calccreditscore(arg *Arg_s, credit *Task_credit_struct) {
@@ -72,7 +71,7 @@ func CreditStat(arg *Arg_s, credit *Task_credit_struct) {
 	wdsin = append(wdsin, wdsit)
 
 	//需要对加分的这天，判断是否在统计期内
-	wdsout, join := Validstatdays(ars, arg, wdsin)
+	wdsout, _ := Validstatdays(ars, arg, wdsin)
 
 	if wdsout == nil {
 
@@ -94,9 +93,7 @@ func CreditStat(arg *Arg_s, credit *Task_credit_struct) {
 		Logger.Error("in HandleTaskBonusDB ", err, "uid: ", credit.Userid, "gid ", arg.Gid)
 	}
 
-	t, _ := time.ParseInLocation("20060102", time.Now().Format("20060102"), time.Local)
-	//重新统计一下个人在竞赛中的成绩,endtime传入当前时间。
-	err = HandleUserTotalDB(join, t.Unix(), credit.Userid, arg, ars, tablev, tablen, db)
+	err = HandleUserTotalDB(credit.Userid, arg, ars, tablev, tablen, db)
 	if err != nil {
 
 		Logger.Error("in HandleUserTotalDB", err, "uid:", credit.Userid, "gid", arg.Gid)
