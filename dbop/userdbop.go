@@ -111,7 +111,7 @@ func HandleUserTotalDB(start int64, end int64, uid int, arg *Arg_s, ars *ActiveR
 
 	//未到达终点，将tmp中的数据更新至用户总统计表中。。(到不到终点都要更新)
 	tablename := "wanbu_stat_activeuser" + tablev
-
+	//stepdaysp用DATEDIFF算出来，从用户加入活动时间到当前时间（）
 	is := "insert into " + tablename + ` (activeid,userid,timestamp,stepdaysp,stepdaywanbup,stepnumberp,
 				stepdistancep,credit1p,credit2p,credit3p,credit4p,updatetime,arrivetime,stepdaypassp,credit5p,credit6p,
 				walkdate,credit7p,credit8p) values

@@ -210,7 +210,7 @@ func OneUserActiveStat(uid int, arg *Arg_s, wdsin []WalkDayData) {
 	//比较用户加入活动的时间与活动开始的时间，取其中的大值，作为Start;
 	//当前时间的day时间戳，到零点零分，作为统计结果的end时间
 	t, _ := time.ParseInLocation("20060102", time.Now().Format("20060102"), time.Local)
-
+	fmt.Println("jointime", join, "当前时间", t.Unix())
 	err = HandleUserTotalDB(join, t.Unix(), uid, arg, ars, tablev, tablen, db)
 	if err != nil {
 

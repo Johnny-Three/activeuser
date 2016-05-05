@@ -29,6 +29,12 @@ func main() {
 
 	args := os.Args
 
+	if len(args) < 2 {
+
+		fmt.Println("别忘记加 -c config.file 运行哦")
+		os.Exit(0)
+	}
+
 	if len(args) == 2 && (args[1] == "-v") {
 
 		fmt.Println("看好了兄弟，现在的版本是【", version, "】，可别弄错了")

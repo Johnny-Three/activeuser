@@ -8,7 +8,7 @@ import (
 
 //判断时间，找到活动开始、统计结束、活动加入时间和上传日期中需要统计的日期..
 //如果返回的wds为空，说明无须统计
-//为方便用户总统计，返回用户加入竞赛的时间
+//为方便用户总统计，返回用户加入团队的时间
 func Validstatdays(ars *ActiveRule, arg *Arg_s, wdsin []WalkDayData) (wdsout []WalkDayData, jointime int64) {
 
 	//fmt.Println("in Validstatdays", arg)
