@@ -15,6 +15,7 @@ import (
 )
 
 var consumer *nsq.Consumer
+var version string = "1.0.0PR1"
 
 func CheckError(err error) {
 	if err != nil {
@@ -25,6 +26,14 @@ func CheckError(err error) {
 }
 
 func main() {
+
+	args := os.Args
+
+	if len(args) == 2 && (args[1] == "-v") {
+
+		fmt.Println("看好了兄弟，现在的版本是【", version, "】，可别弄错了")
+		os.Exit(0)
+	}
 
 	flag.Parse()
 	defer Logger.Flush()

@@ -408,7 +408,6 @@ func (t *BaseRule) Calculate(wd *WalkDayData) (n float64, err error) {
 	if t.Mvalue == nil {
 
 		return 0, errors.New("BaseRule nil")
-
 	}
 
 	//map 排序 ， 按key值大小

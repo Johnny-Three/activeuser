@@ -234,7 +234,7 @@ func HandleUserDayDB(slice_uds []Userdaystat_s, ars *ActiveRule, tablen string, 
 
 	for _, uds := range slice_uds {
 		sqlStr += "(?,?,?,?,UNIX_TIMESTAMP(),?,?,?,?,?,?,?,?,?,?,?,?,?),"
-		if ars.Systemflag == 0 {
+		if ars.Systemflag == 1 {
 			vals = append(vals, uds.Aid, uds.Uid, uds.Walkdate, uds.Timestamp, uds.Gid, uds.Stepnumber, uds.Stepdistance,
 				uds.Steptime, uds.Credit1, uds.Credit2, uds.Credit3, uds.Credit4, uds.Credit5,
 				uds.Credit6, uds.Credit7, uds.Credit8, uds.Stepdaypass)
@@ -268,7 +268,7 @@ func HandleUserDayDB(slice_uds []Userdaystat_s, ars *ActiveRule, tablen string, 
 }
 
 //todo..需要加入分值。。
-func HandleTaskBonusDB(cin *Task_credit_struct, bonus float64, sd int64, gid int, tablen string, db *sql.DB) error {
+func HandleTaskBonusDB(cin *Task_credit_struct, ars *ActiveRule, bonus float64, sd int64, gid int, tablen string, db *sql.DB) error {
 
 	//根据任务加分的type，决定插入c5 or c6
 	//需要计算总分数
@@ -330,7 +330,7 @@ func HandleTaskBonusDB(cin *Task_credit_struct, bonus float64, sd int64, gid int
 
 	}
 
-	//不存在记录，则插入一条记录
+	//不存在记录，则插入一条记录，此处注意stepnumber需要和credit1一致（步数制情况下）
 	if false == exist {
 
 		//类型为任务加分..
@@ -339,12 +339,21 @@ func HandleTaskBonusDB(cin *Task_credit_struct, bonus float64, sd int64, gid int
 			sqlStr := "INSERT INTO wanbu_stat_activeuser_day" + tablen +
 				"(activeid, userid, walkdate,timestamp, updatetime, groupid,stepnumber, stepdistance, steptime, credit1," +
 				"credit2, credit3,  credit4, credit5, credit6,credit7,credit8, stepdaypass) values"
-			sqlStr += `(?,?,?,?,UNIX_TIMESTAMP(),?,0,?,0,?,0,0,0,?,0,0,0,0)`
 
-			_, err := db.Exec(sqlStr, cin.Activeid, cin.Userid, cin.Date, cin.Date, gid, sd, bonus, bonus)
+			if ars.Systemflag == 0 {
 
-			if err != nil {
-				return err
+				sqlStr += `(?,?,?,?,UNIX_TIMESTAMP(),?,?,?,0,?,0,0,0,?,0,0,0,0)`
+				_, err := db.Exec(sqlStr, cin.Activeid, cin.Userid, cin.Date, cin.Date, gid, bonus, sd, bonus, bonus)
+				if err != nil {
+					return err
+				}
+
+			} else if ars.Systemflag == 1 {
+				sqlStr += `(?,?,?,?,UNIX_TIMESTAMP(),?,0,?,0,?,0,0,0,?,0,0,0,0)`
+				_, err := db.Exec(sqlStr, cin.Activeid, cin.Userid, cin.Date, cin.Date, gid, sd, bonus, bonus)
+				if err != nil {
+					return err
+				}
 			}
 
 		} else if cin.Type == 1 { //类型为手动加分
@@ -352,12 +361,21 @@ func HandleTaskBonusDB(cin *Task_credit_struct, bonus float64, sd int64, gid int
 			sqlStr := "INSERT INTO wanbu_stat_activeuser_day" + tablen +
 				"(activeid, userid, walkdate,timestamp, updatetime, groupid,stepnumber, stepdistance, steptime, credit1," +
 				"credit2, credit3,  credit4, credit5, credit6,credit7,credit8, stepdaypass) values"
-			sqlStr += `(?,?,?,?,UNIX_TIMESTAMP(),?,0,?,0,?,0,0,0,0,?,0,0,0)`
 
-			_, err := db.Exec(sqlStr, cin.Activeid, cin.Userid, cin.Date, cin.Date, gid, sd, bonus, bonus)
+			if ars.Systemflag == 0 {
 
-			if err != nil {
-				return err
+				sqlStr += `(?,?,?,?,UNIX_TIMESTAMP(),?,?,?,0,?,0,0,0,0,?,0,0,0)`
+				_, err := db.Exec(sqlStr, cin.Activeid, cin.Userid, cin.Date, cin.Date, gid, bonus, sd, bonus, bonus)
+				if err != nil {
+					return err
+				}
+
+			} else if ars.Systemflag == 1 {
+				sqlStr += `(?,?,?,?,UNIX_TIMESTAMP(),?,0,?,0,?,0,0,0,0,?,0,0,0)`
+				_, err := db.Exec(sqlStr, cin.Activeid, cin.Userid, cin.Date, cin.Date, gid, sd, bonus, bonus)
+				if err != nil {
+					return err
+				}
 			}
 		}
 

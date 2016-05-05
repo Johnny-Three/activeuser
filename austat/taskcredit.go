@@ -88,7 +88,7 @@ func CreditStat(arg *Arg_s, credit *Task_credit_struct) {
 	bonus, sd := TaskBonusStat(credit.Bonus, ars)
 
 	//加分操作DB
-	err = HandleTaskBonusDB(credit, bonus, sd, arg.Gid, tablen, db)
+	err = HandleTaskBonusDB(credit, ars, bonus, sd, arg.Gid, tablen, db)
 	if err != nil {
 
 		Logger.Error("in HandleTaskBonusDB ", err, "uid: ", credit.Userid, "gid ", arg.Gid)
