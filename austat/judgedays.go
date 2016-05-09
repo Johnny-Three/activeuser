@@ -2,7 +2,7 @@ package austat
 
 import (
 	. "activeuser/structure"
-	"fmt"
+	//"fmt"
 	"time"
 )
 
@@ -10,8 +10,6 @@ import (
 //如果返回的wds为空，说明无须统计
 //为方便用户总统计，返回用户加入团队的时间
 func Validstatdays(ars *ActiveRule, arg *Arg_s, wdsin []WalkDayData) (wdsout []WalkDayData, jointime int64) {
-
-	//fmt.Println("in Validstatdays", arg)
 
 	t, _ := time.ParseInLocation("20060102", time.Now().Format("20060102"), time.Local)
 
@@ -22,7 +20,7 @@ func Validstatdays(ars *ActiveRule, arg *Arg_s, wdsin []WalkDayData) (wdsout []W
 	//当前日期在预赛统计时间范围内，计算预赛成绩
 	if ars.Prestarttime <= t.Unix() && t.Unix() <= ars.Preendtime {
 
-		//看jointime,jointime发挥一档威力
+		//Inittime,Inittime发挥一档威力
 		if arg.Inittime <= ars.Prestarttime {
 
 			join = ars.Prestarttime
@@ -39,7 +37,7 @@ func Validstatdays(ars *ActiveRule, arg *Arg_s, wdsin []WalkDayData) (wdsout []W
 		lenth := len(wdsin)
 
 		//上传数据日期非常搞笑的落在了统计日期之外，则不予以统计
-		if wdsin[lenth-1].WalkDate < join || wdsin[0].WalkDate > ars.Preendtime {
+		if wdsin[lenth-1].WalkDate < join || wdsin[0].WalkDate > ars.Preendtime || wdsin[0].WalkDate >= arg.Quittime {
 			return nil, -1
 		}
 
@@ -66,18 +64,25 @@ func Validstatdays(ars *ActiveRule, arg *Arg_s, wdsin []WalkDayData) (wdsout []W
 			//最大的传入日期与统计截止日期做比较，
 			//quitdate与ars.Preendtime取其中的较小值..
 			var comparetime int64
-			if arg.Quittime < ars.Preendtime {
+			var ifquit bool
+			if arg.Quittime < ars.Endtime {
 				comparetime = arg.Quittime
+				ifquit = true
 			} else {
-				comparetime = ars.Preendtime
+				comparetime = ars.Endtime
+				ifquit = false
 			}
 
-			if wdsin[lenth-1].WalkDate > comparetime {
+			if wdsin[lenth-1].WalkDate >= comparetime {
 
-				//一定能找到
+				//一定能找到,quitdate p-1 说明新数据属于
 				for p, v := range wdsin {
 					if v.WalkDate == comparetime {
-						end = p
+						if ifquit == true {
+							end = p - 1
+						} else {
+							end = p
+						}
 					}
 				}
 
@@ -115,7 +120,8 @@ func Validstatdays(ars *ActiveRule, arg *Arg_s, wdsin []WalkDayData) (wdsout []W
 		lenth := len(wdsin)
 
 		//上传数据日期非常搞笑的落在了统计日期之外，则不予以统计
-		if wdsin[lenth-1].WalkDate < join || wdsin[0].WalkDate > ars.Endtime {
+		if wdsin[lenth-1].WalkDate < join || wdsin[0].WalkDate > ars.Endtime || wdsin[0].WalkDate >= arg.Quittime {
+
 			return nil, -1
 		}
 
@@ -142,18 +148,25 @@ func Validstatdays(ars *ActiveRule, arg *Arg_s, wdsin []WalkDayData) (wdsout []W
 			//最大的传入日期与统计截止日期做比较，
 			//quitdate与ars.Preendtime取其中的较小值..
 			var comparetime int64
+			var ifquit bool
 			if arg.Quittime < ars.Endtime {
 				comparetime = arg.Quittime
+				ifquit = true
 			} else {
 				comparetime = ars.Endtime
+				ifquit = false
 			}
 
-			if wdsin[lenth-1].WalkDate > comparetime {
+			if wdsin[lenth-1].WalkDate >= comparetime {
 
-				//一定能找到
+				//一定能找到,quitdate p-1 说明新数据属于
 				for p, v := range wdsin {
 					if v.WalkDate == comparetime {
-						end = p
+						if ifquit == true {
+							end = p - 1
+						} else {
+							end = p
+						}
 					}
 				}
 

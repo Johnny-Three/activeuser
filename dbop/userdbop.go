@@ -217,7 +217,7 @@ func HandleUserTotalDB(uid int, arg *Arg_s, ars *ActiveRule, tablev, tablen stri
 				return errors.New("insert into wanbu_snapshot_activeuser " + err0.Error())
 			}
 
-			us := "update " + "wanbu_stat_activeuser"+tablev,
+			us := "update " + "wanbu_stat_activeuser" + tablev
 			us += " set arrivetime=? where activeid=? and userid=?"
 			_, err1 := db.Exec(us, snap.Walkdate, arg.Aid, uid)
 
@@ -319,27 +319,55 @@ func HandleTaskBonusDB(cin *Task_credit_struct, ars *ActiveRule, bonus float64, 
 		//类型为任务加分..
 		if cin.Type == 0 {
 
-			sqlStr := "update wanbu_stat_activeuser_day" + tablen +
-				" set updatetime=UNIX_TIMESTAMP(),stepdistance=?,credit1=?,credit5=?  where userid=? and activeid = ? and walkdate=?"
+			sqlStr := "update wanbu_stat_activeuser_day" + tablen
 
-			_, err := db.Exec(sqlStr, us.Stepdistance+sd, us.Credit1+bonus, us.Credit5+bonus, cin.Userid, cin.Activeid, cin.Date)
+			//步数制活动，stepnumber需要与credit1（总积分）保持一致
+			if ars.Systemflag == 0 {
 
-			if err != nil {
-				return err
+				sqlStr += " set updatetime=UNIX_TIMESTAMP(),stepdistance=?,stepnumber=?,credit1=?,credit5=?  where userid=? and activeid = ? and walkdate=?"
+
+				_, err := db.Exec(sqlStr, us.Stepdistance+sd, us.Credit1+bonus, us.Credit1+bonus, us.Credit5+bonus, cin.Userid, cin.Activeid, cin.Date)
+
+				if err != nil {
+					return err
+				}
+			} else if ars.Systemflag == 1 {
+
+				sqlStr += " set updatetime=UNIX_TIMESTAMP(),stepdistance=?,credit1=?,credit5=?  where userid=? and activeid = ? and walkdate=?"
+
+				_, err := db.Exec(sqlStr, us.Stepdistance+sd, us.Credit1+bonus, us.Credit5+bonus, cin.Userid, cin.Activeid, cin.Date)
+
+				if err != nil {
+					return err
+				}
 			}
 
 		} else if cin.Type == 1 { //类型为手动加分
 
-			sqlStr := "update wanbu_stat_activeuser_day" + tablen +
-				" set updatetime=UNIX_TIMESTAMP(),stepdistance=?,credit1=?,credit6=?  where userid=? and activeid = ? and walkdate=?"
+			sqlStr := "update wanbu_stat_activeuser_day" + tablen
 
-			_, err := db.Exec(sqlStr, us.Stepdistance+sd, us.Credit1+bonus, us.Credit6+bonus, cin.Userid, cin.Activeid, cin.Date)
+			//步数制活动，stepnumber需要与credit1（总积分）保持一致
+			if ars.Systemflag == 0 {
 
-			if err != nil {
-				return err
+				sqlStr += " set updatetime=UNIX_TIMESTAMP(),stepdistance=?,stepnumber=?,credit1=?,credit6=?  where userid=? and activeid = ? and walkdate=?"
+
+				_, err := db.Exec(sqlStr, us.Stepdistance+sd, us.Credit1+bonus, us.Credit1+bonus, us.Credit6+bonus, cin.Userid, cin.Activeid, cin.Date)
+
+				if err != nil {
+					return err
+				}
+
+			} else if ars.Systemflag == 1 {
+
+				sqlStr += " set updatetime=UNIX_TIMESTAMP(),stepdistance=?,credit1=?,credit6=?  where userid=? and activeid = ? and walkdate=?"
+
+				_, err := db.Exec(sqlStr, us.Stepdistance+sd, us.Credit1+bonus, us.Credit6+bonus, cin.Userid, cin.Activeid, cin.Date)
+
+				if err != nil {
+					return err
+				}
 			}
 		}
-
 	}
 
 	//不存在记录，则插入一条记录，此处注意stepnumber需要和credit1一致（步数制情况下）

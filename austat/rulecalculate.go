@@ -196,8 +196,8 @@ func TimezoneStat(wd *WalkDayData, ar *ActiveRule) (n []float64) {
 	for _, v := range rv {
 
 		clt += v
-		//有Upstepline为负数的情况
-		if clt > float64(ar.UpPrizeLine) {
+		//有UpPrizeLine为负数的情况，大于0做数
+		if clt > float64(ar.UpPrizeLine) && ar.UpPrizeLine > 0 {
 			srb = append(srb, float64(ar.UpPrizeLine))
 			break
 		}

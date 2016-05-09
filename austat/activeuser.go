@@ -114,7 +114,8 @@ func OneUserActiveStat(uid int, arg *Arg_s, wdsin []WalkDayData) {
 
 	wdsout, _ := Validstatdays(ars, arg, wdsin)
 
-	//fmt.Println("这个validdate是这个", wdsout)
+	//fmt.Println("arg is ", arg)
+	//fmt.Println("validdate is", wdsout)
 
 	if wdsout == nil {
 

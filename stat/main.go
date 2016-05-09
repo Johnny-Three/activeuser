@@ -135,6 +135,7 @@ func main() {
 		for {
 
 			tc := <-usensq.User_task_credit_chan
+
 			//找到这个ACTIVEID，其余的不管
 			userinfo, err := GetUserJoinOneGroup(tc.Userid, tc.Activeid, Pool)
 
@@ -152,7 +153,7 @@ func main() {
 
 			//一定存在，已经从缓存中构造出来数据结构..
 			value, exist := (*userinfo)[tc.Userid]
-			//fmt.Println(tc)
+
 			if exist == true {
 
 				//如果此配置项打开，需要过滤活动

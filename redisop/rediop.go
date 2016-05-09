@@ -185,9 +185,15 @@ func LoadAcitveRule(aid int, pool *redis.Pool, db *sql.DB) (*ActiveRule, error) 
 	ar.UpPrizeLine = arj.UpPrizeLine
 	ar.Storeflag = arj.Storeflag
 	ar.Prestarttime = arj.Prestarttime
-	ar.Preendtime = arj.Preendtime
+	if arj.Preendtime > 0 {
+		t, _ := time.ParseInLocation("20060102", time.Unix(arj.Preendtime, 0).Format("20060102"), time.Local)
+		ar.Preendtime = t.Unix()
+	}
 	ar.Starttime = arj.Starttime
-	ar.Endtime = arj.Endtime
+	if arj.Endtime > 0 {
+		t, _ := time.ParseInLocation("20060102", time.Unix(arj.Endtime, 0).Format("20060102"), time.Local)
+		ar.Endtime = t.Unix()
+	}
 	ar.Closetime = arj.Closetime
 	ar.Enddistance = arj.Enddistance
 
@@ -256,6 +262,7 @@ func GetUserJoinGroupInfo(uid int, pool *redis.Pool) (r_map_u_a *map[int][]Arg_s
 			return nil, errors.New(setkey + ":activetime 解析数据错误，string to int ")
 		}
 		//根据艳超的建议，对activetime进行特殊的处理，特化为当前日期的0点0分0秒。
+		//如果有退组，新加入的组的时间也需要重新格式化一下（这个后期放到维护模块做，不在这里做）
 		t, _ := time.ParseInLocation("20060102", time.Unix(activetime, 0).Format("20060102"), time.Local)
 		active.Jointime = t.Unix()
 
@@ -263,11 +270,23 @@ func GetUserJoinGroupInfo(uid int, pool *redis.Pool) (r_map_u_a *map[int][]Arg_s
 		if err != nil {
 			return nil, errors.New(setkey + ":inittime 解析数据错误，string to int ")
 		}
+		//如果有退组，新加入的组的时间也需要重新格式化一下（这个后期放到维护模块做，不在这里做）
+		if active.Inittime > 0 {
+			t, _ := time.ParseInLocation("20060102", time.Unix(active.Inittime, 0).Format("20060102"), time.Local)
+			active.Inittime = t.Unix()
+
+		}
 
 		//fmt.Printf("转换前[%d]，转换后[%d]\n", activetime, active.Jointime)
 		active.Quittime, err = strconv.ParseInt(tmp[4], 10, 64)
 		if err != nil {
 			return nil, errors.New(setkey + ":quitdate 解析数据错误，string to int ")
+		}
+		//需要对quittime进行处理，如果quittime有值，因为quittime是精确到秒级的,特化为当前日期的0点0分0秒。
+		//涉及到调整组之后，这一天数据的归属，根据需求，成绩是属于调整之后的组。
+		if active.Quittime > 0 {
+			t, _ := time.ParseInLocation("20060102", time.Unix(active.Quittime, 0).Format("20060102"), time.Local)
+			active.Quittime = t.Unix()
 		}
 
 		actives = append(actives, active)
@@ -324,10 +343,12 @@ func GetUserJoinOneGroup(uid, aid int, pool *redis.Pool) (r_map_u_a *map[int][]A
 		if active.Aid != aid {
 			continue
 		}
+
 		active.Gid, err = strconv.Atoi(tmp[1])
 		if err != nil {
 			return nil, errors.New(setkey + ":gid 解析数据错误，string to int ")
 		}
+
 		activetime, err0 := strconv.ParseInt(tmp[2], 10, 64)
 		if err0 != nil {
 			return nil, errors.New(setkey + ":activetime 解析数据错误，string to int ")
@@ -336,11 +357,7 @@ func GetUserJoinOneGroup(uid, aid int, pool *redis.Pool) (r_map_u_a *map[int][]A
 		t, _ := time.ParseInLocation("20060102", time.Unix(activetime, 0).Format("20060102"), time.Local)
 		active.Jointime = t.Unix()
 
-		//fmt.Printf("转换前[%d]，转换后[%d]\n", activetime, active.Jointime)
-		active.Quittime, err = strconv.ParseInt(tmp[4], 10, 64)
-		if err != nil {
-			return nil, errors.New(setkey + ":quitdate 解析数据错误，string to int ")
-		}
+		active.Quittime = 2147483647
 
 		actives = append(actives, active)
 		break
