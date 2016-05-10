@@ -71,12 +71,12 @@ func CreditStat(arg *Arg_s, credit *Task_credit_struct) {
 	wdsin = append(wdsin, wdsit)
 
 	//需要对加分的这天，判断是否在统计期内
-	wdsout, _ := Validstatdays(ars, arg, wdsin)
+	wdsout, s, e := Validstatdays(ars, arg, wdsin)
 
 	if wdsout == nil {
 
-		Logger.Error("用户ID: ", credit.Userid, " 竞赛ID: ", arg.Aid, "，任务加分时间：", wdsin[0].WalkDate,
-			" ，超出统计期限，不予以加分，请理解")
+		Logger.Error("用户ID: ", credit.Userid, " 竞赛ID: ", arg.Aid, "，团队ID：", arg.Gid, "，任务加分时间：", wdsin[0].WalkDate,
+			" ，不在统计期内，因此不予以加分，请理解")
 		return
 	}
 
@@ -93,7 +93,7 @@ func CreditStat(arg *Arg_s, credit *Task_credit_struct) {
 		Logger.Error("in HandleTaskBonusDB ", err, "uid: ", credit.Userid, "gid ", arg.Gid)
 	}
 
-	err = HandleUserTotalDB(credit.Userid, arg, ars, tablev, tablen, db)
+	err = HandleUserTotalDB(credit.Userid, arg, ars, tablev, tablen, s, e, db)
 	if err != nil {
 
 		Logger.Error("in HandleUserTotalDB", err, "uid:", credit.Userid, "gid", arg.Gid)

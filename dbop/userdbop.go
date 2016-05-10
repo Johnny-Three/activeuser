@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"sync/atomic"
-	"time"
+	//"time"
 )
 
 var Map_user_actives map[int][]Arg_s
@@ -19,24 +19,26 @@ var snapend int64
 //比较用户加入活动的时间与活动开始的时间，取其中的大值，作为Start;
 //算出这次统计的总成绩，相加
 //到达终点写wanbu_snapshot_activeuser_v1表
-func HandleUserTotalDB(uid int, arg *Arg_s, ars *ActiveRule, tablev, tablen string, db *sql.DB) error {
+func HandleUserTotalDB(uid int, arg *Arg_s, ars *ActiveRule, tablev, tablen string, start, end int64, db *sql.DB) error {
 
-	var start, end int64
-	//统计开始时间判断，如果用户加入竞赛时间小于活动开始时间，那么开始时间为活动开始时间，反之，按加入竞赛时间
-	if arg.Jointime < ars.Starttime {
+	/*
+		var start, end int64
+		//统计开始时间判断，如果用户加入竞赛时间小于活动开始时间，那么开始时间为活动开始时间，反之，按加入竞赛时间
+		if arg.Jointime < ars.Starttime {
 
-		start = ars.Starttime
-	} else {
-		start = arg.Jointime
-	}
+			start = ars.Starttime
+		} else {
+			start = arg.Jointime
+		}
 
-	//统计结束时间判断，如果活动结束时间小于当前时间，那么，以结束时间为准，反之，按当前时间
-	today, _ := time.ParseInLocation("20060102", time.Now().Format("20060102"), time.Local)
-	if ars.Endtime < today.Unix() {
-		end = ars.Endtime
-	} else {
-		end = today.Unix()
-	}
+		//统计结束时间判断，如果活动结束时间小于当前时间，那么，以结束时间为准，反之，按当前时间
+		today, _ := time.ParseInLocation("20060102", time.Now().Format("20060102"), time.Local)
+		if ars.Endtime < today.Unix() {
+			end = ars.Endtime
+		} else {
+			end = today.Unix()
+		}
+	*/
 
 	qs := `SELECT stepdistance,(CASE WHEN stepnumber>=10000 THEN 1 ELSE 0 END),stepnumber,
 	credit1,credit2,credit3,credit4,credit5,credit6,credit7,credit8,stepdaypass,timestamp,walkdate
@@ -288,6 +290,7 @@ func HandleTaskBonusDB(cin *Task_credit_struct, ars *ActiveRule, bonus float64, 
 	us := Userdaystat_s{}
 	exist := false
 	var updatetime int64
+	var stepdaypass int
 
 	//查找当前是否有记录,有的话加上奖励积分
 	qs := "SELECT * from  wanbu_stat_activeuser_day" + tablen +
@@ -324,9 +327,14 @@ func HandleTaskBonusDB(cin *Task_credit_struct, ars *ActiveRule, bonus float64, 
 			//步数制活动，stepnumber需要与credit1（总积分）保持一致
 			if ars.Systemflag == 0 {
 
-				sqlStr += " set updatetime=UNIX_TIMESTAMP(),stepdistance=?,stepnumber=?,credit1=?,credit5=?  where userid=? and activeid = ? and walkdate=?"
+				//步数制，加分需要考虑可能stepdaypass字段的变化
+				if int(us.Credit1+bonus) >= ars.PassRule.Objectsteps {
+					stepdaypass = 1
+				}
 
-				_, err := db.Exec(sqlStr, us.Stepdistance+sd, us.Credit1+bonus, us.Credit1+bonus, us.Credit5+bonus, cin.Userid, cin.Activeid, cin.Date)
+				sqlStr += " set updatetime=UNIX_TIMESTAMP(),stepdistance=?,stepnumber=?,credit1=?,credit5=?,stepdaypass=?  where userid=? and activeid = ? and walkdate=?"
+
+				_, err := db.Exec(sqlStr, us.Stepdistance+sd, us.Credit1+bonus, us.Credit1+bonus, us.Credit5+bonus, stepdaypass, cin.Userid, cin.Activeid, cin.Date)
 
 				if err != nil {
 					return err
@@ -349,9 +357,14 @@ func HandleTaskBonusDB(cin *Task_credit_struct, ars *ActiveRule, bonus float64, 
 			//步数制活动，stepnumber需要与credit1（总积分）保持一致
 			if ars.Systemflag == 0 {
 
-				sqlStr += " set updatetime=UNIX_TIMESTAMP(),stepdistance=?,stepnumber=?,credit1=?,credit6=?  where userid=? and activeid = ? and walkdate=?"
+				//步数制，加分需要考虑可能stepdaypass字段的变化
+				if int(us.Credit1+bonus) >= ars.PassRule.Objectsteps {
+					stepdaypass = 1
+				}
 
-				_, err := db.Exec(sqlStr, us.Stepdistance+sd, us.Credit1+bonus, us.Credit1+bonus, us.Credit6+bonus, cin.Userid, cin.Activeid, cin.Date)
+				sqlStr += " set updatetime=UNIX_TIMESTAMP(),stepdistance=?,stepnumber=?,credit1=?,credit6=?,stepdaypass=?  where userid=? and activeid = ? and walkdate=?"
+
+				_, err := db.Exec(sqlStr, us.Stepdistance+sd, us.Credit1+bonus, us.Credit1+bonus, us.Credit6+bonus, stepdaypass, cin.Userid, cin.Activeid, cin.Date)
 
 				if err != nil {
 					return err
@@ -382,8 +395,12 @@ func HandleTaskBonusDB(cin *Task_credit_struct, ars *ActiveRule, bonus float64, 
 
 			if ars.Systemflag == 0 {
 
-				sqlStr += `(?,?,?,?,UNIX_TIMESTAMP(),?,?,?,0,?,0,0,0,?,0,0,0,0)`
-				_, err := db.Exec(sqlStr, cin.Activeid, cin.Userid, cin.Date, cin.Date, gid, bonus, sd, bonus, bonus)
+				sqlStr += `(?,?,?,?,UNIX_TIMESTAMP(),?,?,?,0,?,0,0,0,?,0,0,0,?)`
+				//步数制，加分需要考虑可能stepdaypass字段的变化
+				if int(bonus) >= ars.PassRule.Objectsteps {
+					stepdaypass = 1
+				}
+				_, err := db.Exec(sqlStr, cin.Activeid, cin.Userid, cin.Date, cin.Date, gid, bonus, sd, bonus, bonus, stepdaypass)
 				if err != nil {
 					return err
 				}
@@ -404,8 +421,13 @@ func HandleTaskBonusDB(cin *Task_credit_struct, ars *ActiveRule, bonus float64, 
 
 			if ars.Systemflag == 0 {
 
-				sqlStr += `(?,?,?,?,UNIX_TIMESTAMP(),?,?,?,0,?,0,0,0,0,?,0,0,0)`
-				_, err := db.Exec(sqlStr, cin.Activeid, cin.Userid, cin.Date, cin.Date, gid, bonus, sd, bonus, bonus)
+				//步数制，加分需要考虑可能stepdaypass字段的变化
+				if int(bonus) >= ars.PassRule.Objectsteps {
+					stepdaypass = 1
+				}
+
+				sqlStr += `(?,?,?,?,UNIX_TIMESTAMP(),?,?,?,0,?,0,0,0,0,?,0,0,?)`
+				_, err := db.Exec(sqlStr, cin.Activeid, cin.Userid, cin.Date, cin.Date, gid, bonus, sd, bonus, bonus, stepdaypass)
 				if err != nil {
 					return err
 				}

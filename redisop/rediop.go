@@ -299,7 +299,7 @@ func GetUserJoinGroupInfo(uid int, pool *redis.Pool) (r_map_u_a *map[int][]Arg_s
 }
 
 //todo..redis获取失败，需要从db中拿到..
-func GetUserJoinOneGroup(uid, aid int, pool *redis.Pool) (r_map_u_a *map[int][]Arg_s, err error) {
+func GetUserJoinOneGroup(uid, aid int, ct *Task_credit_struct, pool *redis.Pool) (r_map_u_a *map[int][]Arg_s, err error) {
 
 	map_u_a := make(map[int][]Arg_s)
 	var actives []Arg_s = []Arg_s{}
@@ -340,27 +340,62 @@ func GetUserJoinOneGroup(uid, aid int, pool *redis.Pool) (r_map_u_a *map[int][]A
 		if err != nil {
 			return nil, errors.New(setkey + ":aid 解析数据错误，string to int ")
 		}
+		//找不到，continue
 		if active.Aid != aid {
 			continue
 		}
-
-		active.Gid, err = strconv.Atoi(tmp[1])
+		//传了个Credit，找到这天，然后看看这天在哪儿，找到为止
+		//step1: 找到inittime..
+		active.Inittime, err = strconv.ParseInt(tmp[3], 10, 64)
 		if err != nil {
-			return nil, errors.New(setkey + ":gid 解析数据错误，string to int ")
+			return nil, errors.New(setkey + ":inittime 解析数据错误，string to int ")
+		}
+		//如果有退组，新加入的组的时间也需要重新格式化一下（这个后期放到维护模块做，不在这里做）
+		if active.Inittime > 0 {
+			t, _ := time.ParseInLocation("20060102", time.Unix(active.Inittime, 0).Format("20060102"), time.Local)
+			active.Inittime = t.Unix()
+
+		}
+		//step2 : 找到quittime..
+		active.Quittime, err = strconv.ParseInt(tmp[4], 10, 64)
+		if err != nil {
+			return nil, errors.New(setkey + ":quitdate 解析数据错误，string to int ")
+		}
+		//需要对quittime进行处理，如果quittime有值，因为quittime是精确到秒级的,特化为当前日期的0点0分0秒。
+		//涉及到调整组之后，这一天数据的归属，根据需求，成绩是属于调整之后的组。
+		if active.Quittime > 0 {
+			t, _ := time.ParseInLocation("20060102", time.Unix(active.Quittime, 0).Format("20060102"), time.Local)
+			active.Quittime = t.Unix()
 		}
 
-		activetime, err0 := strconv.ParseInt(tmp[2], 10, 64)
-		if err0 != nil {
-			return nil, errors.New(setkey + ":activetime 解析数据错误，string to int ")
+		//如果要加分的这天在这里，赋值Gid
+		if ct.Date >= active.Inittime && ct.Date < active.Quittime {
+
+			active.Gid, err = strconv.Atoi(tmp[1])
+			if err != nil {
+				return nil, errors.New(setkey + ":gid 解析数据错误，string to int ")
+			}
+
+			activetime, err0 := strconv.ParseInt(tmp[2], 10, 64)
+			if err0 != nil {
+				return nil, errors.New(setkey + ":activetime 解析数据错误，string to int ")
+			}
+			//对activetime进行特殊的处理，特化为当前日期的0点0分0秒。
+			//如果有退组，新加入的组的时间也需要重新格式化一下（这个后期放到维护模块做，不在这里做）
+			t, _ := time.ParseInLocation("20060102", time.Unix(activetime, 0).Format("20060102"), time.Local)
+			active.Jointime = t.Unix()
+
+			//重新赋值quittime
+			active.Quittime = 2147483647
+
+			actives = append(actives, active)
+
+			break
+
+		} else {
+
+			continue
 		}
-		//根据艳超的建议，对activetime进行特殊的处理，特化为当前日期的0点0分0秒。
-		t, _ := time.ParseInLocation("20060102", time.Unix(activetime, 0).Format("20060102"), time.Local)
-		active.Jointime = t.Unix()
-
-		active.Quittime = 2147483647
-
-		actives = append(actives, active)
-		break
 	}
 
 	map_u_a[uid] = actives

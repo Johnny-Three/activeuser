@@ -9,7 +9,7 @@ import (
 //判断时间，找到活动开始、统计结束、活动加入时间和上传日期中需要统计的日期..
 //如果返回的wds为空，说明无须统计
 //为方便用户总统计，返回用户加入团队的时间
-func Validstatdays(ars *ActiveRule, arg *Arg_s, wdsin []WalkDayData) (wdsout []WalkDayData, jointime int64) {
+func Validstatdays(ars *ActiveRule, arg *Arg_s, wdsin []WalkDayData) (wdsout []WalkDayData, starttime, endtime int64) {
 
 	t, _ := time.ParseInLocation("20060102", time.Now().Format("20060102"), time.Local)
 
@@ -31,14 +31,14 @@ func Validstatdays(ars *ActiveRule, arg *Arg_s, wdsin []WalkDayData) (wdsout []W
 
 		} else if arg.Inittime > ars.Preendtime {
 			//错误数据
-			return nil, -1
+			return nil, 0, 0
 		}
 
 		lenth := len(wdsin)
 
 		//上传数据日期非常搞笑的落在了统计日期之外，则不予以统计
 		if wdsin[lenth-1].WalkDate < join || wdsin[0].WalkDate > ars.Preendtime || wdsin[0].WalkDate >= arg.Quittime {
-			return nil, -1
+			return nil, 0, 0
 		}
 
 		if wdsin[0].WalkDate >= join {
@@ -96,7 +96,24 @@ func Validstatdays(ars *ActiveRule, arg *Arg_s, wdsin []WalkDayData) (wdsout []W
 			wadsout = append(wadsout, wdsin[i])
 		}
 
-		return wadsout, join
+		//这里返回的开始统计时间和结束统计时间，用于HandleUserTotalDB开始和结束时间
+		var s, e int64
+		//统计开始时间判断，如果用户加入竞赛时间小于活动开始时间，那么开始时间为活动开始时间，反之，按加入竞赛时间
+		if arg.Jointime < ars.Prestarttime {
+
+			s = ars.Prestarttime
+		} else {
+			s = arg.Jointime
+		}
+
+		//统计结束时间判断，如果活动结束时间小于当前时间，那么，以结束时间为准，反之，按当前时间
+		if ars.Preendtime < t.Unix() {
+			e = ars.Preendtime
+		} else {
+			e = t.Unix()
+		}
+
+		return wadsout, s, e
 
 	}
 
@@ -114,7 +131,7 @@ func Validstatdays(ars *ActiveRule, arg *Arg_s, wdsin []WalkDayData) (wdsout []W
 
 		} else if arg.Inittime > ars.Endtime {
 			//错误数据
-			return nil, -1
+			return nil, 0, 0
 		}
 
 		lenth := len(wdsin)
@@ -122,7 +139,7 @@ func Validstatdays(ars *ActiveRule, arg *Arg_s, wdsin []WalkDayData) (wdsout []W
 		//上传数据日期非常搞笑的落在了统计日期之外，则不予以统计
 		if wdsin[lenth-1].WalkDate < join || wdsin[0].WalkDate > ars.Endtime || wdsin[0].WalkDate >= arg.Quittime {
 
-			return nil, -1
+			return nil, 0, 0
 		}
 
 		if wdsin[0].WalkDate >= join {
@@ -180,10 +197,27 @@ func Validstatdays(ars *ActiveRule, arg *Arg_s, wdsin []WalkDayData) (wdsout []W
 			wadsout = append(wadsout, wdsin[i])
 		}
 
-		return wadsout, join
+		//这里返回的开始统计时间和结束统计时间，用于HandleUserTotalDB开始和结束时间
+		var s, e int64
+		//统计开始时间判断，如果用户加入竞赛时间小于活动开始时间，那么开始时间为活动开始时间，反之，按加入竞赛时间
+		if arg.Jointime < ars.Starttime {
+
+			s = ars.Starttime
+		} else {
+			s = arg.Jointime
+		}
+
+		//统计结束时间判断，如果活动结束时间小于当前时间，那么，以结束时间为准，反之，按当前时间
+		if ars.Endtime < t.Unix() {
+			e = ars.Endtime
+		} else {
+			e = t.Unix()
+		}
+
+		return wadsout, s, e
 
 	}
 
 	//不落在任何区间，无效数据不统计
-	return nil, -1
+	return nil, 0, 0
 }

@@ -112,7 +112,7 @@ func OneUserActiveStat(uid int, arg *Arg_s, wdsin []WalkDayData) {
 		return
 	}
 
-	wdsout, _ := Validstatdays(ars, arg, wdsin)
+	wdsout, s, e := Validstatdays(ars, arg, wdsin)
 
 	//fmt.Println("arg is ", arg)
 	//fmt.Println("validdate is", wdsout)
@@ -207,7 +207,7 @@ func OneUserActiveStat(uid int, arg *Arg_s, wdsin []WalkDayData) {
 	usensq.Encode(writensq)
 
 	//个人总统计（入DB）
-	err = HandleUserTotalDB(uid, arg, ars, tablev, tablen, db)
+	err = HandleUserTotalDB(uid, arg, ars, tablev, tablen, s, e, db)
 	if err != nil {
 
 		Logger.Error("in HandleUserTotalDB:[ ", err, " ],uid:[", uid, "],gid:[", arg.Gid, "]")

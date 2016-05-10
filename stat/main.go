@@ -137,7 +137,7 @@ func main() {
 			tc := <-usensq.User_task_credit_chan
 
 			//找到这个ACTIVEID，其余的不管
-			userinfo, err := GetUserJoinOneGroup(tc.Userid, tc.Activeid, Pool)
+			userinfo, err := GetUserJoinOneGroup(tc.Userid, tc.Activeid, &tc, Pool)
 
 			//如果查找用户缓存出现问题...记录问题，继续工作
 			if err != nil {
