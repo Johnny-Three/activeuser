@@ -65,7 +65,7 @@ func Validstatdays(ars *ActiveRule, arg *Arg_s, wdsin []WalkDayData) (wdsout []W
 			//quitdate与ars.Preendtime取其中的较小值..
 			var comparetime int64
 			var ifquit bool
-			if arg.Quittime < ars.Endtime {
+			if arg.Quittime <= ars.Endtime {
 				comparetime = arg.Quittime
 				ifquit = true
 			} else {
@@ -166,7 +166,7 @@ func Validstatdays(ars *ActiveRule, arg *Arg_s, wdsin []WalkDayData) (wdsout []W
 			//quitdate与ars.Preendtime取其中的较小值..
 			var comparetime int64
 			var ifquit bool
-			if arg.Quittime < ars.Endtime {
+			if arg.Quittime <= ars.Endtime {
 				comparetime = arg.Quittime
 				ifquit = true
 			} else {

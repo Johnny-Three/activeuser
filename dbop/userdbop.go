@@ -13,7 +13,6 @@ var Map_user_actives map[int][]Arg_s
 
 var tcount0 uint32
 var tcount1 uint32
-var snapend int64
 
 //从个人天表中拿到一些数据统计出结果，活动开始到这次统计之间
 //比较用户加入活动的时间与活动开始的时间，取其中的大值，作为Start;
@@ -21,24 +20,7 @@ var snapend int64
 //到达终点写wanbu_snapshot_activeuser_v1表
 func HandleUserTotalDB(uid int, arg *Arg_s, ars *ActiveRule, tablev, tablen string, start, end int64, db *sql.DB) error {
 
-	/*
-		var start, end int64
-		//统计开始时间判断，如果用户加入竞赛时间小于活动开始时间，那么开始时间为活动开始时间，反之，按加入竞赛时间
-		if arg.Jointime < ars.Starttime {
-
-			start = ars.Starttime
-		} else {
-			start = arg.Jointime
-		}
-
-		//统计结束时间判断，如果活动结束时间小于当前时间，那么，以结束时间为准，反之，按当前时间
-		today, _ := time.ParseInLocation("20060102", time.Now().Format("20060102"), time.Local)
-		if ars.Endtime < today.Unix() {
-			end = ars.Endtime
-		} else {
-			end = today.Unix()
-		}
-	*/
+	var snapend int64
 
 	qs := `SELECT stepdistance,(CASE WHEN stepnumber>=10000 THEN 1 ELSE 0 END),stepnumber,
 	credit1,credit2,credit3,credit4,credit5,credit6,credit7,credit8,stepdaypass,timestamp,walkdate
@@ -109,12 +91,8 @@ func HandleUserTotalDB(uid int, arg *Arg_s, ars *ActiveRule, tablev, tablen stri
 			snap.Stepdaypass = tmp.Stepdaypass
 			snap.Timestamp = tmp.Timestamp
 			snap.Walkdate = tmp.Walkdate
-
-			if ars.Endtime < snap.Walkdate {
-				snapend = ars.Endtime
-			} else {
-				snapend = snap.Walkdate
-			}
+			//snapend计算DATEDIFF(FROM_UNIXTIME(?),FROM_UNIXTIME(?))+1，stepdaysp(阶段步行天数)
+			snapend = snap.Walkdate
 
 			ifarrive = true
 
@@ -168,6 +146,35 @@ func HandleUserTotalDB(uid int, arg *Arg_s, ars *ActiveRule, tablev, tablen stri
 				return errors.New("执行SQL问题5：" + err.Error())
 
 			}
+		}
+
+		//如果snapshot表中的arrivetime和当前加和的天数据最后一天有相同日期的情况下，需要更新snapshot表，意思是
+		//引起成绩变化（到终点），当天的成绩仍然需要继续统计
+		if snap.Walkdate == art {
+
+			tablename = "wanbu_snapshot_activeuser" + tablev
+			is := "insert into " + tablename + `(activeid,userid,timestamp,stepdaysp,stepdaywanbup,
+				stepnumberp,stepdistancep,credit1p,credit2p,credit3p,credit4p,updatetime,arrivetime,stepdaypassp,
+				credit5p,credit6p,credit7p,credit8p) values 
+        (?,?,?,DATEDIFF(FROM_UNIXTIME(?),FROM_UNIXTIME(?))+1,
+        ?,?,?,?,?,?,?,UNIX_TIMESTAMP(),?,?,?,?,?,?)
+        ON DUPLICATE KEY UPDATE 
+        stepdaysp = values(stepdaysp),stepdaywanbup = values(stepdaywanbup),
+        stepnumberp = values(stepnumberp),stepdistancep=values(stepdistancep),credit1p=VALUES(credit1p),
+        credit2p=VALUES(credit2p),credit3p=VALUES(credit3p),credit4p=VALUES(credit4p),credit5p=VALUES(credit5p),
+        credit6p=VALUES(credit6p),credit7p=VALUES(credit7p),credit8p=VALUES(credit8p),updatetime=UNIX_TIMESTAMP(),
+        stepdaypassp=VALUES(stepdaypassp)`
+
+			_, err0 := db.Exec(is, arg.Aid, uid, snap.Timestamp, snapend, start, snap.Stepdaywanbu, snap.Stepnumber,
+				snap.Stepdistance, snap.Credit1, snap.Credit2, snap.Credit3, snap.Credit4, snap.Walkdate,
+				snap.Stepdaypass,
+				snap.Credit5, snap.Credit6, snap.Credit7, snap.Credit8)
+
+			if err0 != nil {
+				//fmt.Println("insert into wanbu_snapshot_activeuser " + err0.Error())
+				return errors.New("insert into wanbu_snapshot_activeuser " + err0.Error())
+			}
+
 		}
 
 		//如果tmp.Walkdate>arrivetime,更新snapshot
