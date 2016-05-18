@@ -95,9 +95,7 @@ func HandleUserTotalDB(uid int, arg *Arg_s, ars *ActiveRule, tablev, tablen stri
 			snapend = snap.Walkdate
 
 			ifarrive = true
-
 		}
-
 	}
 
 	//未到达终点，将tmp中的数据更新至用户总统计表中。。(到不到终点都要更新)
@@ -233,9 +231,7 @@ func HandleUserTotalDB(uid int, arg *Arg_s, ars *ActiveRule, tablev, tablen stri
 			if err1 != nil {
 				return errors.New("执行SQL问题6：" + err1.Error())
 			}
-
 		}
-
 	}
 
 	atomic.AddUint32(&tcount0, 1)
