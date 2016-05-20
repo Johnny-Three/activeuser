@@ -15,7 +15,7 @@ import (
 )
 
 var consumer *nsq.Consumer
-var version string = "1.0.0PR5"
+var version string = "1.0.0PR6"
 
 func CheckError(err error) {
 	if err != nil {
@@ -28,12 +28,6 @@ func CheckError(err error) {
 func main() {
 
 	args := os.Args
-
-	if len(args) < 2 {
-
-		fmt.Println("别忘记加 -c config.file 运行哦")
-		os.Exit(0)
-	}
 
 	if len(args) == 2 && (args[1] == "-v") {
 

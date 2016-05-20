@@ -1,12 +1,11 @@
 package dbop
 
 import (
+	. "activeuser/logs"
 	. "activeuser/structure"
 	"database/sql"
 	"errors"
-	"fmt"
 	"sync/atomic"
-	//"time"
 )
 
 var Map_user_actives map[int][]Arg_s
@@ -235,8 +234,8 @@ func HandleUserTotalDB(uid int, arg *Arg_s, ars *ActiveRule, tablev, tablen stri
 	}
 
 	atomic.AddUint32(&tcount0, 1)
-
-	fmt.Printf("write [%d] record into %s\n", tcount0, "wanbu_stat_activeuser"+tablev)
+	Logger.Infof("个人总：用户【%d】,活动【%d】,起始时间【%d-%d】统计完毕", uid, arg.Aid, start, end)
+	Logger.Debugf("write [%d] record into %s", tcount0, "wanbu_stat_activeuser"+tablev)
 
 	return nil
 }
@@ -278,7 +277,8 @@ func HandleUserDayDB(slice_uds []Userdaystat_s, ars *ActiveRule, tablen string, 
 	}
 
 	atomic.AddUint32(&tcount1, 1)
-	fmt.Printf("write [%d] record into %s\n", tcount1, "wanbu_stat_activeuser_day"+tablen)
+	Logger.Infof("个人天：用户【%d】,活动【%d】,起始时间【%d-%d】统计完毕", slice_uds[0].Uid, slice_uds[0].Aid, slice_uds[0].Walkdate, slice_uds[len(slice_uds)-1].Walkdate)
+	Logger.Debugf("write [%d] record into %s", tcount1, "wanbu_stat_activeuser_day"+tablen)
 
 	return nil
 
@@ -445,6 +445,14 @@ func HandleTaskBonusDB(cin *Task_credit_struct, ars *ActiveRule, bonus float64, 
 		}
 
 	}
+	var addtype string
+	if cin.Type == 0 {
+		addtype = "任务"
+	} else if cin.Type == 1 {
+		addtype = "手动"
+	}
+
+	Logger.Infof("任务加分：用户【%d】,活动【%d】,加分【%.3f】,类型【%s】,时间【%d】统计完毕", cin.Userid, cin.Activeid, bonus, addtype, cin.Date)
 
 	return nil
 }

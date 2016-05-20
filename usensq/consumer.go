@@ -115,7 +115,7 @@ func NewConsummer(topic, channel string) (*nsq.Consumer, error) {
 	println("LookupdPollInterval", config.LookupdPollInterval)
 	//println("Consumer IPAddress", config.LocalAddr.String())
 
-	logfile, err := os.OpenFile("../../log/au_consumer.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	logfile, err := os.OpenFile("../log/au_consumer.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		fmt.Printf("%s\r\n", err.Error())
 		os.Exit(-1)
