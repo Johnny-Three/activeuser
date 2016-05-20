@@ -331,7 +331,7 @@ func HandleTaskBonusDB(cin *Task_credit_struct, ars *ActiveRule, bonus float64, 
 			if ars.Systemflag == 0 {
 
 				//步数制，加分需要考虑可能stepdaypass字段的变化
-				if int(us.Credit1+bonus) >= ars.PassRule.Objectsteps {
+				if int(us.Credit1+bonus) >= ars.PassRule.Objectsteps && ars.PassRule.Objectsteps != 0 {
 					stepdaypass = 1
 				}
 
@@ -361,7 +361,7 @@ func HandleTaskBonusDB(cin *Task_credit_struct, ars *ActiveRule, bonus float64, 
 			if ars.Systemflag == 0 {
 
 				//步数制，加分需要考虑可能stepdaypass字段的变化
-				if int(us.Credit1+bonus) >= ars.PassRule.Objectsteps {
+				if int(us.Credit1+bonus) >= ars.PassRule.Objectsteps && ars.PassRule.Objectsteps != 0 {
 					stepdaypass = 1
 				}
 
@@ -400,7 +400,7 @@ func HandleTaskBonusDB(cin *Task_credit_struct, ars *ActiveRule, bonus float64, 
 
 				sqlStr += `(?,?,?,?,UNIX_TIMESTAMP(),?,?,?,0,?,0,0,0,?,0,0,0,?)`
 				//步数制，加分需要考虑可能stepdaypass字段的变化
-				if int(bonus) >= ars.PassRule.Objectsteps {
+				if int(bonus) >= ars.PassRule.Objectsteps && ars.PassRule.Objectsteps != 0 {
 					stepdaypass = 1
 				}
 				_, err := db.Exec(sqlStr, cin.Activeid, cin.Userid, cin.Date, cin.Date, gid, bonus, sd, bonus, bonus, stepdaypass)
@@ -425,7 +425,7 @@ func HandleTaskBonusDB(cin *Task_credit_struct, ars *ActiveRule, bonus float64, 
 			if ars.Systemflag == 0 {
 
 				//步数制，加分需要考虑可能stepdaypass字段的变化
-				if int(bonus) >= ars.PassRule.Objectsteps {
+				if int(bonus) >= ars.PassRule.Objectsteps && ars.PassRule.Objectsteps != 0 {
 					stepdaypass = 1
 				}
 

@@ -106,8 +106,8 @@ func NewConsummer(topic, channel string) (*nsq.Consumer, error) {
 	config = nsq.NewConfig()
 	//心跳间隔时间 3s
 	config.HeartbeatInterval = 3 * time.Second
-	//10分钟去发现一次，发现topic为指定的nsqd
-	config.LookupdPollInterval = 5 * time.Minute
+	//3分钟去发现一次，发现topic为指定的nsqd
+	config.LookupdPollInterval = 3 * time.Minute
 	//config.LocalAddr, _ = net.ResolveTCPAddr("tcp", envconf.Consumerip+":"+envconf.Consumerport)
 
 	println("HeartbeatInterval", config.HeartbeatInterval)

@@ -23,7 +23,7 @@ func loadAppConfig() {
     <formats>
         <format id="main" format="%Date/%Time [%LEV] %Msg%n"/>
         <format id="info" format="%Line %Date/%Time [%LEV] %Msg%n"/>
-        <format id="critical" format="Date/%Time [%LEV] %Func %Msg %n"/>
+        <format id="critical" format="%Line %Date/%Time [%LEV] %Func %Msg %n"/>
     </formats>
 	</seelog>`
 

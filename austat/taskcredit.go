@@ -45,12 +45,14 @@ func CreditStat(arg *Arg_s, credit *Task_credit_struct) {
 	//先找策略表，如果加载策略有问题，直接退。。
 	tablev, errv := strategy.GetTableV(arg.Aid)
 	if errv != nil {
-		Logger.Critical("uid【", credit.Userid, "】,", errv)
+		fmt.Println(errv)
+		Logger.Critical("uid【", credit.Userid, "】,", "aid 【", arg.Aid, "】,", errv)
 		return
 	}
 
 	tablen, errn := strategy.GetTableN(arg.Aid)
 	if errn != nil {
+		fmt.Println(errn)
 		Logger.Critical("uid【", credit.Userid, "】,", errn)
 		return
 	}
