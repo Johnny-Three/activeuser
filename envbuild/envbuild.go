@@ -86,7 +86,7 @@ func ConfigParse() error {
 }
 
 func init() {
-	flag.StringVar(&config_file_path, "c", "config file", "Use -c <filepath>")
+	flag.StringVar(&config_file_path, "c", "../etc/config.ini", "Use -c <filepath>")
 }
 
 func poolInit(server string) *redis.Pool {
