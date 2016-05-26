@@ -15,7 +15,7 @@ import (
 )
 
 var consumer *nsq.Consumer
-var version string = "1.0.0PR6"
+var version string = "1.0.0PR7"
 
 func CheckError(err error) {
 	if err != nil {
@@ -133,6 +133,8 @@ func main() {
 			//找到这个ACTIVEID，其余的不管
 			userinfo, err := GetUserJoinOneGroup(tc.Userid, tc.Activeid, &tc, Pool)
 
+			Logger.Info("加分消息来到了，", tc)
+
 			//如果查找用户缓存出现问题...记录问题，继续工作
 			if err != nil {
 				Logger.Critical(err)
@@ -152,9 +154,11 @@ func main() {
 
 				//如果此配置项打开，需要过滤活动
 				if true == strings.EqualFold(EnvConf.Filterstatus, "on") {
+
 					//带过滤项的calc
 					CalccreditscoreF(&value[0], &tc)
 				} else {
+
 					Calccreditscore(&value[0], &tc)
 				}
 			}

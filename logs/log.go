@@ -14,7 +14,7 @@ func loadAppConfig() {
             <console />    
         </filter>
         <filter levels="info">
-            <rollingfile formatid="info" type="size" filename="../log/roll.log" maxsize="100000" maxrolls="5" />
+            <rollingfile formatid="info" type="size" filename="../log/roll.log" maxsize="100000000" maxrolls="5" />
         </filter>
         <filter levels="critical,error">
             <file formatid="critical" path="../log/error.log"/>

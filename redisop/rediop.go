@@ -323,6 +323,7 @@ func GetUserJoinOneGroup(uid, aid int, ct *Task_credit_struct, pool *redis.Pool)
 	if err = redis.ScanSlice(reply, &strs); err != nil {
 		return nil, err
 	}
+
 	//加载不到数据，说明没有这个key对应的值，需要过滤掉这个用户上传的数据，不做竞赛统计。
 	if strs == nil {
 
@@ -396,6 +397,11 @@ func GetUserJoinOneGroup(uid, aid int, ct *Task_credit_struct, pool *redis.Pool)
 
 			continue
 		}
+	}
+
+	//缓存中没有发现对应的aid讯息，这是个大问题，缓存维护出现问题，需要记录
+	if len(actives) == 0 {
+		return nil, errors.New("Uid【" + strconv.Itoa(uid) + "】,Aid 【" + strconv.Itoa(aid) + "】在key【" + setkey + "】中未找到，异常情况，请注意检查")
 	}
 
 	map_u_a[uid] = actives
