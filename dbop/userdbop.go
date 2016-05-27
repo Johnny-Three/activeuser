@@ -335,18 +335,20 @@ func HandleTaskBonusDB(cin *Task_credit_struct, ars *ActiveRule, bonus float64, 
 					stepdaypass = 1
 				}
 
-				sqlStr += " set updatetime=UNIX_TIMESTAMP(),stepdistance=?,stepnumber=?,credit1=?,credit5=?,stepdaypass=?  where userid=? and activeid = ? and walkdate=?"
+				sqlStr += " set timestamp= (case when timestamp=0 then ? else timestamp end),   " +
+					"updatetime=UNIX_TIMESTAMP(),stepdistance=?,stepnumber=?,credit1=?,credit5=?,stepdaypass=?  where userid=? and activeid = ? and walkdate=?"
 
-				_, err := db.Exec(sqlStr, us.Stepdistance+sd, us.Credit1+bonus, us.Credit1+bonus, us.Credit5+bonus, stepdaypass, cin.Userid, cin.Activeid, cin.Date)
+				_, err := db.Exec(sqlStr, cin.Date, us.Stepdistance+sd, us.Credit1+bonus, us.Credit1+bonus, us.Credit5+bonus, stepdaypass, cin.Userid, cin.Activeid, cin.Date)
 
 				if err != nil {
 					return err
 				}
 			} else if ars.Systemflag == 1 {
 
-				sqlStr += " set updatetime=UNIX_TIMESTAMP(),stepdistance=?,credit1=?,credit5=?  where userid=? and activeid = ? and walkdate=?"
+				sqlStr += " set timestamp= (case when timestamp=0 then ? else timestamp end),   " +
+					"updatetime=UNIX_TIMESTAMP(),stepdistance=?,credit1=?,credit5=?  where userid=? and activeid = ? and walkdate=?"
 
-				_, err := db.Exec(sqlStr, us.Stepdistance+sd, us.Credit1+bonus, us.Credit5+bonus, cin.Userid, cin.Activeid, cin.Date)
+				_, err := db.Exec(sqlStr, cin.Date, us.Stepdistance+sd, us.Credit1+bonus, us.Credit5+bonus, cin.Userid, cin.Activeid, cin.Date)
 
 				if err != nil {
 					return err
@@ -365,9 +367,10 @@ func HandleTaskBonusDB(cin *Task_credit_struct, ars *ActiveRule, bonus float64, 
 					stepdaypass = 1
 				}
 
-				sqlStr += " set updatetime=UNIX_TIMESTAMP(),stepdistance=?,stepnumber=?,credit1=?,credit6=?,stepdaypass=?  where userid=? and activeid = ? and walkdate=?"
+				sqlStr += " set timestamp= (case when timestamp=0 then ? else timestamp end),   " +
+					"updatetime=UNIX_TIMESTAMP(),stepdistance=?,stepnumber=?,credit1=?,credit6=?,stepdaypass=?  where userid=? and activeid = ? and walkdate=?"
 
-				_, err := db.Exec(sqlStr, us.Stepdistance+sd, us.Credit1+bonus, us.Credit1+bonus, us.Credit6+bonus, stepdaypass, cin.Userid, cin.Activeid, cin.Date)
+				_, err := db.Exec(sqlStr, cin.Date, us.Stepdistance+sd, us.Credit1+bonus, us.Credit1+bonus, us.Credit6+bonus, stepdaypass, cin.Userid, cin.Activeid, cin.Date)
 
 				if err != nil {
 					return err
@@ -375,9 +378,10 @@ func HandleTaskBonusDB(cin *Task_credit_struct, ars *ActiveRule, bonus float64, 
 
 			} else if ars.Systemflag == 1 {
 
-				sqlStr += " set updatetime=UNIX_TIMESTAMP(),stepdistance=?,credit1=?,credit6=?  where userid=? and activeid = ? and walkdate=?"
+				sqlStr += " set timestamp= (case when timestamp=0 then ? else timestamp end),  " +
+					"updatetime=UNIX_TIMESTAMP(),stepdistance=?,credit1=?,credit6=?  where userid=? and activeid = ? and walkdate=?"
 
-				_, err := db.Exec(sqlStr, us.Stepdistance+sd, us.Credit1+bonus, us.Credit6+bonus, cin.Userid, cin.Activeid, cin.Date)
+				_, err := db.Exec(sqlStr, cin.Date, us.Stepdistance+sd, us.Credit1+bonus, us.Credit6+bonus, cin.Userid, cin.Activeid, cin.Date)
 
 				if err != nil {
 					return err

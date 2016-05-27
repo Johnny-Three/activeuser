@@ -15,7 +15,7 @@ import (
 )
 
 var consumer *nsq.Consumer
-var version string = "1.0.0PR7"
+var version string = "1.0.0PR8"
 
 func CheckError(err error) {
 	if err != nil {
